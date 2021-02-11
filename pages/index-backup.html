@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#2196f3">
+  <meta http-equiv="Content-Security-Policy" 
+    content="
+      worker-src blob:; 
+      child-src blob: gap:;
+      img-src 'self' blob: data:;
+      default-src * 'self' 'unsafe-inline' 'unsafe-eval' data: gap: content:">
+  <title>Framework7</title>
+  <link rel="stylesheet" href="framework7.bundle.min.css">
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="apple-touch-icon" href="img/f7-icon-square.png">
+  <link rel="icon" href="img/f7-icon.png">
+  <script src='https://api.mapbox.com/mapbox-gl-js/v2.1.0/mapbox-gl.js'></script>
+  <link href='https://api.mapbox.com/mapbox-gl-js/v2.1.0/mapbox-gl.css' rel='stylesheet' />
+</head>
+<body>
+  <div id="app">
+    <div class="panel panel-left panel-cover panel-resizable panel-init">
+      <div class="page">
+        <div class="page-content">
+          <div class="block-title">Main View Navigation</div>
+          <div class="list links-list">
+            <ul>
+              <li>
+                <a href="/accordion/" class="panel-close">Accordion</a>
+              </li>
+              <li>
+                <a href="/action-sheet/" class="panel-close">Action Sheet</a>
+              </li>
+              <li>
+                <a href="/badge/" class="panel-close">Badge</a>
+              </li>
+              <li>
+                <a href="/buttons/" class="panel-close">Buttons</a>
+              </li>
+              <li>
+                <a href="/cards/" class="panel-close">Cards</a>
+              </li>
+              <li>
+                <a href="/checkbox/" class="panel-close">Checkbox</a>
+              </li>
+              <li>
+                <a href="/chips/" class="panel-close">Chips/Tags</a>
+              </li>
+              <li>
+                <a href="/contacts-list/" class="panel-close">Contacts List</a>
+              </li>
+              <li>
+                <a href="/data-table/" class="panel-close">Data Table</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="view view-main view-init safe-areas" data-master-detail-breakpoint="800" data-url="/">
+      <div class="page page-home">
+        <div class="navbar navbar-large navbar-transparent">
+          <div class="navbar-bg"></div>
+          <div class="navbar-inner">
+            <div class="left">
+              <a href="#" class="link icon-only panel-open" data-panel="left">
+                <i class="icon f7-icons if-not-md">menu</i>
+                <i class="icon material-icons md-only">menu</i>
+              </a>
+            </div>
+            <div class="title sliding">Test Mapbox</div>
+            <div class="title-large">
+              <div class="title-large-text">Test Mapbox</div>
+            </div>
+            
+          </div>
+        </div>
+        <div class="page-content">
+            <!--<ul>
+              <li>
+                <a class="item-content item-link" href="/Mapbox/">
+                  <div class="item-media"><i class="icon icon-f7"></i></div>
+                  <div class="item-inner">
+                    <div class="item-title">Accordion</div>
+                  </div>
+                </a>
+              </li>
+            </ul>-->
+          <!--<div id='map'></div>
+          <script>
+            mapboxgl.accessToken = 'pk.eyJ1IjoiZHJpZXNvZGlzZWUiLCJhIjoiY2trdjlubnNtMWYyYTJvcGN1YmZzZmp2eiJ9.vczXMcv4591crBq7pCgsYw';
+            if ("geolocation" in navigator) 
+            {
+
+              navigator.geolocation.getCurrentPosition(position => { 
+                var map = new mapboxgl.Map(
+                  {
+                    container: 'map',
+                    center: [position.coords.longitude, position.coords.latitude],
+                    zoom: 15,
+                    style: 'mapbox://styles/groenestapstenenvzw/cjsa2ljft5tgs1ftdjcqr09mo'
+                  });
+                map.addControl(
+                new mapboxgl.GeolocateControl(
+                {
+                  positionOptions: 
+                  {
+                    enableHighAccuracy: true
+                  },
+                  trackUserLocation: true
+                })
+                );
+              })
+            }
+            else 
+            { /* geolocation IS NOT available, handle it */ 
+              console.log("geen geolocatie");
+            }
+          </script>
+        -->
+          <div class="toolbar tabbar-labels toolbar-bottom">
+            <div class="toolbar-inner">
+                <a href="/" class="tab-link tab-link-active"> <i class="icon f7-icons ios-only">home</i> <i class="icon f7-icons ios-only icon-ios-fill">home_fill</i> <i class="icon material-icons md-only">home</i> <span class="tabbar-label">Home</span> </a>
+                <a href="/register/" class="tab-link"> <i class="icon f7-icons ios-only">list</i> <i class="icon f7-icons ios-only icon-ios-fill">list_fill</i> <i class="icon material-icons md-only">view_list</i> <span class="tabbar-label">Register</span> </a>
+                <a href="/login/" class="tab-link"> <i class="icon f7-icons ios-only">account_box</i> <i class="icon f7-icons ios-only icon-ios-fill">account_box</i> <i class="icon material-icons md-only">account_box</i> <span class="tabbar-label">Login</span> </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="../../packages/core/js/framework7.bundle.min.js"></script>
+  <script src="js/routes.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

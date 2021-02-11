@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#2196f3">
+  <meta http-equiv="Content-Security-Policy" 
+    content="
+      worker-src blob:; 
+      child-src blob: gap:;
+      
+      default-src * 'self' 'unsafe-inline' 'unsafe-eval' data: gap: content:">
+      <!-- img-src 'self' blob: data:; -->
+  <title>Forêt de Soignes</title>
+  <link rel="stylesheet" href="framework7.bundle.min.css">
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="apple-touch-icon" href="img/icon_zonienwoud">
+  <link rel="icon" href="img/icon_zonienwoud">
+  <script src='https://api.mapbox.com/mapbox-gl-js/v2.1.0/mapbox-gl.js'></script>
+  <link href='https://api.mapbox.com/mapbox-gl-js/v2.1.0/mapbox-gl.css' rel='stylesheet' />
+  <script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-language/v0.10.1/mapbox-gl-language.js'></script>
+</head>
+<body>
+  <div id="app">
+    <div class="panel panel-left panel-cover panel-resizable panel-init">
+      <div class="page">
+          <div class="block-title">Menu</div>
+          <div class="list links-list">
+            <ul>
+              <li>
+                <a href="//" class="panel-close">Test 1</a>
+              </li>
+              <li>
+                <a href="//" class="panel-close">Test 2</a>
+              </li>
+              <li>
+                <a href="//" class="panel-close">Test 3</a>
+              </li>
+            </ul>
+          </div>
+        
+      </div>
+    </div>  
+    <div class="view view-main view-init safe-areas" data-master-detail-breakpoint="800" data-url="/">
+      <div class="page page-home">
+        <div class="navbar">
+          <div class="navbar-bg"></div>
+          <div class="navbar-inner">
+            <div class="left">
+              <a href="#" class="link icon-only panel-open" data-panel="left">
+                <i class="icon f7-icons if-not-md">menu</i>
+                <i class="icon material-icons md-only">menu</i>
+              </a>
+            </div>
+            <div class="title">Forêt de Soignes</div>
+            <div class="right">
+              <a class="link popover-open" href="#" data-popover=".popover-links">FR</a>
+              <div class="popover popover-links">
+                <div class="popover-inner">
+                  <div class="list">
+                    <ul>
+                      <li><a class="list-button item-link popover-close" href="/" id="NL" onclick="LanuageChange(this.id)">NL</a></li>
+                      <li><a class="list-button item-link popover-close" href="/index-eng/" id="ENG" onclick="LanuageChange(this.id)">ENG</a></li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="toolbar tabbar-labels toolbar-bottom">
+          <div class="toolbar-inner">
+              <a href="/index-fr/" class="tab-link tab-link-active"> <i class="icon f7-icons ios-only">home</i> <i class="icon f7-icons ios-only icon-ios-fill">home_fill</i> <i class="icon material-icons md-only">home</i> <span class="tabbar-label">Home</span> </a>
+              <a href="/mapbox-fr/" class="tab-link"> <i class="icon f7-icons ios-only">list</i> <i class="icon f7-icons ios-only icon-ios-fill">map</i> <i class="icon material-icons md-only">map</i> <span class="tabbar-label">Carte</span> </a>
+              <a href="/mapbox-fr/" class="tab-link"> <i class="icon f7-icons ios-only">doc</i> <i class="icon f7-icons ios-only icon-ios-fill">doc</i> <i class="icon material-icons md-only">doc</i> <span class="tabbar-label">Info</span> </a>
+          </div>
+        </div>
+        <div class="page-content">
+          <div class="card demo-card-header-pic">
+            <a href="/Event/">
+            <div style="background-image:url(https://cdn.framework7.io/placeholder/nature-1000x600-3.jpg)"
+              class="card-header align-items-flex-end">Event naam</div>
+            </a>
+            <div class="card-content card-content-padding">
+              <p class="date">21 Januari, 2015</p>
+              <p>Quisque eget vestibulum nulla. Quisque quis dui quis ex ultricies efficitur vitae non felis. Phasellus
+                quis nibh hendrerit...</p>
+            </div>
+            <!--<div class="card-footer"><a href="#" class="link">Like</a><a href="#" class="link">Read more</a></div>-->
+          </div>
+         
+            <!--<ul>
+              <li>
+                <a class="item-content item-link" href="/Mapbox/">
+                  <div class="item-media"><i class="icon icon-f7"></i></div>
+                  <div class="item-inner">
+                    <div class="item-title">Accordion</div>
+                  </div>
+                </a>
+              </li>
+            </ul>-->
+          <!--<div id='map'></div>
+          <script>
+            mapboxgl.accessToken = 'pk.eyJ1IjoiZHJpZXNvZGlzZWUiLCJhIjoiY2trdjlubnNtMWYyYTJvcGN1YmZzZmp2eiJ9.vczXMcv4591crBq7pCgsYw';
+            if ("geolocation" in navigator) 
+            {
+
+              navigator.geolocation.getCurrentPosition(position => { 
+                var map = new mapboxgl.Map(
+                  {
+                    container: 'map',
+                    center: [position.coords.longitude, position.coords.latitude],
+                    zoom: 15,
+                    style: 'mapbox://styles/groenestapstenenvzw/cjsa2ljft5tgs1ftdjcqr09mo'
+                  });
+                map.addControl(
+                new mapboxgl.GeolocateControl(
+                {
+                  positionOptions: 
+                  {
+                    enableHighAccuracy: true
+                  },
+                  trackUserLocation: true
+                })
+                );
+              })
+            }
+            else 
+            { /* geolocation IS NOT available, handle it */ 
+              console.log("geen geolocatie");
+            }
+          </script>
+        -->
+          
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="../../packages/core/js/framework7.bundle.min.js"></script>
+  <script src="js/routes.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
