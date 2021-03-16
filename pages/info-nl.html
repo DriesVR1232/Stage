@@ -1,0 +1,201 @@
+<div class="page">
+  <div class="navbar">
+    <div class="navbar-bg"></div>
+    <div class="navbar-inner">
+      <div class="title">Encyclopedy</div>
+      <div class="right">
+        <a href="#" class="tab-link tab popup-open" data-popup=".popup-melding">
+          <i class="icon f7-icons if-not-md probleemicon"><img src=".\img/informationIconZonienwoud.png"></i>
+          <i class="icon material-icons md-only probleemicon"><img src=".\img/informationIconZonienwoud.png"></i>
+        </a>
+        <a class="link popover-open" href="#" data-popover=".popover-links">NL</a>
+        <div class="popover popover-links">
+          <div class="popover-inner">
+            <div class="list">
+              <ul>
+                <li><a class="list-button item-link popover-close" href="/info-eng/" id="ENG" onclick="LanuageChange(this.id)">ENG</a></li>
+                <li><a class="list-button item-link popover-close" href="/info-fr/" id="FR" onclick="LanuageChange(this.id)">FR</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div> 
+  <div class="toolbar tabbar-labels toolbar-bottom">
+    <div class="toolbar-inner">
+      <a href="/map-nl/" class="tab-link " onclick="Kaart()">
+        <i class="icon f7-icons if-not-md">map_fill</i>
+        <i class="icon material-icons md-only">map</i>
+        <span class="tabbar-label">Kaart</span>
+      </a>
+      <a href="info-nl" class="tab-link tab-link-active">
+        <i class="icon f7-icons if-not-md">doc_fill</i>
+        <i class="icon material-icons md-only">description</i>
+        <span class="tabbar-label">Encyclopedy</span>
+      </a>
+    </div>
+  </div>
+    <div class="page-content">
+          <!--
+          <div class="card demo-card-header-pic">
+            <a href="#">
+            <div style="background-image:url(\img/fauna.jpg)"
+              class="card-header align-items-flex-end"><b>Fauna& Flora</b></div>
+            </a>
+            <div class="card-content card-content-padding">
+              <p>Hier vind je info over de Fauna en Flora die zich in het Zoniënwoud bevind.</p>
+            </div>
+            
+            <div class="card-footer center">
+                <a href="#" class="link"> </a>
+                <a href="/faunaFlora-nl/" class="link">
+                  <i class="icon f7-icons if-not-md">search</i>
+                  <i class="icon material-icons md-only">search</i>
+                </a>
+                <a href="#" class="link"> </a>
+            </div>
+          </div>
+          <div class="card demo-card-header-pic">
+            <a href="#">
+            <div style="background-image:url(\img/erfgoed.jpg)"
+              class="card-header align-items-flex-end"><b>Erfgoed</b></div>
+            </a>
+            <div class="card-content card-content-padding">
+              <p>Op zoek naar een interessante plaats? Ontdek hier al het natuurlijk en historisch erfgoed dat het Zoniënwoud rijk is.</p>
+            </div>
+            <div class="card-footer center">
+                <a href="#" class="link"> </a>
+                <a href="/erfgoed-nl/" class="link">
+                  <i class="icon f7-icons if-not-md">search</i>
+                  <i class="icon material-icons md-only">search</i>
+                </a>
+                <a href="#" class="link"> </a>
+            </div>
+          </div>
+          -->
+      <div class="list media-list">
+        <ul>
+          <li>
+            <a href="/erfgoed-nl/" class="item-link item-content">
+              <div class="item-media">
+                <img src=".\img/erfgoed.jpg" width="80" />
+              </div>
+              <div class="item-inner">
+                <div class="item-title-row">
+                  <div class="item-title">Erfgoed</div>
+                </div>
+                <div class="item-text">Hier vind u meer info over het erfgoed</div>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a href="/faunaFlora-nl/" class="item-link item-content">
+              <div class="item-media">
+                <img src=".\img/fauna.jpg" width="80" />
+              </div>
+              <div class="item-inner">
+                <div class="item-title-row">
+                  <div class="item-title">Fauna & Flora</div>
+                </div>
+                <div class="item-text">Hier vind u meer info over de Fauna & Flora in het Zoniënwoud</div>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a href="/toegangspoorten-nl/" class="item-link item-content">
+              <div class="item-media">
+                <img src=".\img/toegangspoort.jpg" width="80" />
+              </div>
+              <div class="item-inner">
+                <div class="item-title-row">
+                  <div class="item-title">Toegangspoorten</div>
+                </div>
+                <div class="item-text">Hier vind u meer info over de Toegangspoorten in het Zoniënwoud</div>
+              </div>
+            </a>
+          </li>
+        </ul>
+      </div>
+      
+         
+          <!--
+          <div class="card demo-card-header-pic">
+            <a href="#">
+            <div style="background-image:url(\img/erfgoed.jpg)"
+              class="card-header align-items-flex-end"><b>Over het Woud</b></div>
+            </a>
+            <div class="card-content card-content-padding">
+              <p>Ontdek hier alles over het Zoniënwoud! Maak kennis met de 6 toegangspoorten en leer de rijke geschiedenis van het woud.</p>
+            </div>
+            <div class="card-footer center">
+                <a href="#" class="link"> </a>
+                <a href="/about-nl/" class="link">
+                  <i class="icon f7-icons if-not-md">search</i>
+                  <i class="icon material-icons md-only">search</i>
+                </a>
+                <a href="#" class="link"> </a>
+            </div>
+          </div>
+        -->
+        <!-- Code voor de popup -->
+      <div class="popup popup-melding">
+        <div class="view">
+          <div class="page">
+            <div class="navbar">
+              <div class="navbar-inner">
+                <div class="title"></div>
+                <div class="right">
+                  <!-- Link to close popup -->
+                  <a class="link popup-close"><img src=".\img/close-icon.png"></a>
+                </div>
+              </div>
+            </div>
+            <div class="page-content">
+              <div class="grid-container">
+                <div class="grid-item-titel item1 "><h1>Meld een probleem</h1></div>
+                <div class="grid-item-dropdown item2 ">
+                  <span class="custom-dropdown-second big-2">
+                    <select>    
+                        <option>Feedback</option>
+                        <option>Tijd</option>  
+                    </select>
+                  </span> 
+                </div>
+                <div class="grid-item-input item3 "> 
+                  <label class="titel">Titel: &nbsp;</label>
+                  <input type="text" class="titel" placeholder="typ hier een bericht"/>
+                </div>
+                <div class="grid-item-foto item4 ">
+                  <input type="file" accept="image/*" capture="camera" id="cameraInput">
+                  <img id="uploadimage" style="width: 50%; height: 50%;">
+
+                  
+                </div>
+                <div class="grid-item-text item5 ">
+                  <label>Beschrijving:</label>
+                  <textarea class="resizable" placeholder="Bio" placeholder="textarea"></textarea>
+
+                </div>
+                <div class="grid-item-checbox item6 ">
+                  <label class="item-checkbox item-content">
+                    <input type="checkbox"  value="Books" checked="checked" />
+                    <i class="icon icon-checkbox"></i>
+                    <div class="item-inner">
+                      <div class="item-title">Locatie delen</div>
+                    </div>
+                  </label>
+                </div>
+                <div class="grid-item-button item7 ">
+                  <a href="#" class="button button-large button-fill ">
+                  <span>Verstuur</span>
+                  </a>
+                </div>
+              
+              </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

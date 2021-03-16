@@ -15,6 +15,79 @@
   width: 100%; 
   height: 100%;
 }
+.background
+{
+  background-image: url("../img/ZonienwoudBackgroundImage.png");
+  background-size:     cover;                      /* <------ */
+  background-repeat:   no-repeat;
+  background-position: center center;
+  height: 100%;
+  width: 100%;
+}
+.toolbar-bottom
+{
+  background-color: #207454 !important;
+}
+.toolbar-inner
+{
+  border-radius: 10px;
+  margin-left: 2%;
+  margin-right: 2%;
+}
+.tab-link
+{
+  border-radius: 10px;
+}
+.csstoolbar{
+  height: 8%;
+  border-radius: 10px;
+  width: 95%;
+  margin-left: 2%;
+}
+.icon
+{
+  color: white;
+}
+.afbeelding
+{
+  width: 100%;
+  height: 100%;
+  margin-top: 0.3em;
+}
+.page
+{
+  background-color: #f0dcb4 !important;
+}
+.routeChoice
+{
+  background-color: #fff4ec !important;
+  margin-bottom: -4%;
+  margin-top: 0%;
+}
+.vl {
+  /*border-left: 6px solid green;*/
+  height: 100%;
+}
+
+.routechoicetext
+{
+  margin-left: 1%;
+}
+.navbar-inner
+{
+background-color: #207454 !important;
+}
+.probleemicon
+{
+  color: yellow !important;
+}
+.button
+{
+  background-color: #e08c24;
+}
+
+
+
 .material-icons {
   font-family: 'Material Icons';
   font-weight: normal;
@@ -38,6 +111,21 @@
 
   /* Support for IE. */
   font-feature-settings: 'liga';
+}
+@font-face{
+  font-family: Titel;
+  src: url('../fonts/SonGrotesqueStencil20111228.otf') format("opentype");
+  font-family: Tekst;
+  src: url('../fonts/SonGrotesque20111228.otf') format("opentype");
+}
+ html body {
+  font-family: Tekst;
+  /*src: url('/fonts/SonGrotesqueStencil20111228.ttf') format("truetype");
+  font-family: myFirstFont;*/
+}
+.Titel
+{
+  font-family: Titel;
 }
 
 @font-face {
@@ -371,7 +459,7 @@ div.demo-lazy {
 .demo-swiper-coverflow .swiper-slide {
   background-size: cover;
   color: #fff;
-  -webkit-backface-visibility: hidden;
+  -webkit-backface-visibility-: hidden;
 }
 .demo-swiper-fade .swiper-slide {
   background-size: cover;
