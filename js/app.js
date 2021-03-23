@@ -32,38 +32,55 @@ var app = new Framework7({
 
 
 /*firebase initialisation*/
-var firebaseConfig = {
-  apiKey: "AIzaSyBRh6vB7DoTxaH9jz4BgEIBMfkKxmHO-sg",
-  authDomain: "zonienwoud-b21d4.firebaseapp.com",
-  databaseURL: "https://zonienwoud-b21d4.firebaseio.com",
-  projectId: "zonienwoud-b21d4",
-  storageBucket: "zonienwoud-b21d4.appspot.com",
-  messagingSenderId: "675674796995",
-  appId: "1:675674796995:web:b073e15b7413f9ea"
-};
+var firebaseConfig;
 // Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-var database = firebase.database();
-var storage = firebase.storage();
+var database, storage;
 //localStorage.setItem("EersteKeerGeladen","false");
 
 var mymap;
+/*
+function addScripts()
+{
+  var div = document.getElementById("firebaseScripts");
+  var firebaseScript1 = document.createElement("script");
+  firebaseScript1.src = "https://www.gstatic.com/firebasejs/8.2.7/firebase-app.js";
+  div.appendChild(firebaseScript1);
 
+  var firebaseScript2 = document.createElement("script");
+  firebaseScript2.src = "https://www.gstatic.com/firebasejs/8.2.7/firebase-database.js";
+  div.appendChild(firebaseScript2);
+
+  var firebaseScript3 = document.createElement("script");
+  firebaseScript3.src = "https://www.gstatic.com/firebasejs/8.2.7/firebase-storage.js";
+  div.appendChild(firebaseScript3);
+  localStorage.setItem("firebaseScriptsLoaded","true");
+}
+*/
 function AantalAssets()
 {
+  alert("in aantalassets");
   var x = 0;
-  var refroutes = firebase.database().ref('flamelink/environments/production/content/routes/en-US');
-  firebase.database().ref(refroutes).on('value', function(snapshot)
+  try
   {
-    x = snapshot.numChildren();
-    var refGates = firebase.database().ref('flamelink/environments/production/content/gates/en-US');
-    refGates.on("value", function(gatesnapshot) 
+    var refroutes = firebase.database().ref('flamelink/environments/production/content/routes/en-US');
+    firebase.database().ref(refroutes).on('value', function(snapshot)
     {
-      x = x + gatesnapshot.numChildren();
-      localStorage.setItem("aantalAssets",x);
-      alert("aantal assets:" + x);
+      alert("in firebase query");
+      x = snapshot.numChildren();
+      var refGates = firebase.database().ref('flamelink/environments/production/content/gates/en-US');
+      refGates.on("value", function(gatesnapshot) 
+      {
+        alert("in laatste query");
+        x = x + gatesnapshot.numChildren();
+        localStorage.setItem("aantalAssets",x);
+        alert("aantal assets:" + x);
+      });
     });
-  });
+  }
+  catch(err) 
+  {
+    alert(err.message);
+  }
 }
 function CheckInternet()
 {
@@ -82,18 +99,19 @@ function CheckInternet()
     {
       if (xhr.status >= 200 && xhr.status < 304) 
       {
-        console.log("online");
+        alert("online");
         localStorage.setItem("InternetStatus","Online");
+
       } 
       else 
       {
-        console.log("offline");
+        alert("offline");
         localStorage.setItem("InternetStatus","Offline");
       }
     }
   }
 }
-function infoOphalen ()
+var infoOphalenInterval = setInterval(function()
 {
   /*-----------------------check als gebruiker internet heeft of niet--------------------*/
   CheckInternet();
@@ -104,220 +122,283 @@ function infoOphalen ()
   }, 5000);
   */
 /*------------------------------------------------------------------*/
-  var infoOphalenInternetInterval = setInterval(function()
-  {
-    var internetStatus = localStorage.getItem("InternetStatus");
-    if(internetStatus == "Online" && localStorage.getItem("EersteKeerGeladen") == null)
-    {
-      clearInterval(infoOphalenInternetInterval);
-      alert("begin is online");
-      //---------------------------------------------------------------------------
-      AantalAssets();
-      var aantalAssets = 0;
-      var geladenAssets = 0;
-      var progress = 0;
-      var dialog = app.dialog.progress('Loading assets', progress);
-      dialog.setText("Asset 0 of " + aantalAssets+ " loaded");
-      var assetsInterval = setInterval(function()
-      {
-        if(localStorage.getItem("aantalAssets") != null)
-        {
-          clearInterval(assetsInterval);
-          aantalAssets = localStorage.getItem("aantalAssets");
-          var berekenProgress =  100 / aantalAssets;
-          //console.log("aantal assets: " + aantalAssets);
-          //console.log("aantal assets = " + aantalAssets);
-          
-          if(localStorage.getItem("EersteKeerGeladen") == null)
-          {
-            alert("het is null");
-            localStorage.setItem("EersteKeerGeladen","false");
-          }
-          if(localStorage.getItem("EersteKeerGeladen") == "false")
-          {
-            //------------------------------------Data over routes ophalen---------------------------------
-            var localstorageRouteNames = [];
-            var refroutes = firebase.database().ref('flamelink/environments/production/content/routes/en-US');
-            firebase.database().ref(refroutes).on('value', function(snapshot)
-            {
-                snapshot.forEach(function(childSnapshot)  
-                {
-                  var value = childSnapshot.val();
-                  for (var key of Object.keys(value)) 
-                  {
-                    if(key == "__meta__")
-                    {
-                      //console.log(key + " -> " + x[key]);
-                      delete value[key];
-                    }
-                    // console.log(key + " -> " + x[key]);
-                  }
-                  localstorageRouteNames.push(value.uniqueName)
-                  localStorage.setItem(value.uniqueName, JSON.stringify(value));
-                  //-----------------------Excel fetch----------------------------------------------
-                  var url = value.routePoints;
 
-                  /* set up async GET request */
-                  var req = new XMLHttpRequest();
-                  req.open("GET", url, true);
-                  req.responseType = "arraybuffer";
-                  
-                  req.onload = function(e) 
+  if(localStorage.getItem("firebaseScriptsLoaded") == "true")
+  {
+    clearInterval(infoOphalenInterval);
+    setTimeout(function()
+    {
+      var internetStatus = localStorage.getItem("InternetStatus");
+      alert("internetstatus:" + internetStatus);
+      alert("eerstekeergeladen:" + localStorage.getItem("EersteKeerGeladen"));
+      if(internetStatus == "Online" && localStorage.getItem("EersteKeerGeladen") == null)
+      {
+        //addScripts();
+        if(localStorage.getItem("firebaseScriptsLoaded") == "true")
+        {
+          alert("firebasescriptsloaded = TRUE");
+          try
+          {
+            firebaseConfig = 
+            {
+              apiKey: "AIzaSyBRh6vB7DoTxaH9jz4BgEIBMfkKxmHO-sg",
+              authDomain: "zonienwoud-b21d4.firebaseapp.com",
+              databaseURL: "https://zonienwoud-b21d4.firebaseio.com",
+              projectId: "zonienwoud-b21d4",
+              storageBucket: "zonienwoud-b21d4.appspot.com",
+              messagingSenderId: "675674796995",
+              appId: "1:675674796995:web:b073e15b7413f9ea"
+            };
+          }
+          catch(err)
+          {
+            alert("define firebase: " + err);
+          }
+          try
+          {
+            firebase.initializeApp(firebaseConfig);
+          }
+          catch(err)
+          {
+            alert("initialize error" + err);
+          }
+          try
+          {
+            database = firebase.database();
+          }
+          catch(err)
+          {
+            alert("database error" + err);
+          }
+          try
+          {
+            storage = firebase.storage();
+          }
+          catch(err)
+          {
+            alert("storage error" + err);
+          }
+        }
+        // voor deze 3 lijnen appart een try catch doen
+        
+        /*firebase.initializeApp(firebaseConfig);
+        database = firebase.database();
+        storage = firebase.storage();*/
+        alert("begin is online");
+        //---------------------------------------------------------------------------
+        try
+        {
+          AantalAssets();
+        }
+        catch(err)
+        {
+          alert(err);
+        }
+        
+        var aantalAssets = 0;
+        var geladenAssets = 0;
+        var progress = 0;
+        var dialog = app.dialog.progress('Loading assets', progress);
+        dialog.setText("Asset 0 of " + aantalAssets+ " loaded");
+        var assetsInterval = setInterval(function()
+        {
+          if(localStorage.getItem("aantalAssets") != null)
+          {
+            alert("aantalassets niet null");
+            clearInterval(assetsInterval);
+            aantalAssets = localStorage.getItem("aantalAssets");
+            var berekenProgress =  100 / aantalAssets;
+            //console.log("aantal assets: " + aantalAssets);
+            //console.log("aantal assets = " + aantalAssets);
+            
+            if(localStorage.getItem("EersteKeerGeladen") == null)
+            {
+              alert("het is null");
+              localStorage.setItem("EersteKeerGeladen","false");
+            }
+            if(localStorage.getItem("EersteKeerGeladen") == "false")
+            {
+              //------------------------------------Data over routes ophalen---------------------------------
+              var localstorageRouteNames = [];
+              var refroutes = firebase.database().ref('flamelink/environments/production/content/routes/en-US');
+              firebase.database().ref(refroutes).on('value', function(snapshot)
+              {
+                  snapshot.forEach(function(childSnapshot)  
                   {
-                    var data = new Uint8Array(req.response);
-                    var workbook = XLSX.read(data, {type:"array"});
-                  
-                    /* DO SOMETHING WITH workbook HERE */
-                    var numberOfSheets = workbook.SheetNames.length;
-                    for (var i = 0; i < numberOfSheets; i++) 
-                    {  
-                      var Sheet = workbook.SheetNames[i];
-                      var excelRows = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[Sheet]);
-                      var sheetName = workbook.SheetNames[i].replace(/ /g, '');
-                      var arraySheetName = sheetName.replace("-", '');
-                      var obj = excelRows;
-                      var key = Object.keys(obj);
+                    var value = childSnapshot.val();
+                    for (var key of Object.keys(value)) 
+                    {
+                      if(key == "__meta__")
+                      {
+                        //console.log(key + " -> " + x[key]);
+                        delete value[key];
+                      }
+                      // console.log(key + " -> " + x[key]);
+                    }
+                    localstorageRouteNames.push(value.uniqueName)
+                    localStorage.setItem(value.uniqueName, JSON.stringify(value));
+                    //-----------------------Excel fetch----------------------------------------------
+                    var url = value.routePoints;
+
+                    /* set up async GET request */
+                    var req = new XMLHttpRequest();
+                    req.open("GET", url, true);
+                    req.responseType = "arraybuffer";
+                    
+                    req.onload = function(e) 
+                    {
+                      var data = new Uint8Array(req.response);
+                      var workbook = XLSX.read(data, {type:"array"});
+                    
+                      /* DO SOMETHING WITH workbook HERE */
+                      var numberOfSheets = workbook.SheetNames.length;
+                      for (var i = 0; i < numberOfSheets; i++) 
+                      {  
+                        var Sheet = workbook.SheetNames[i];
+                        var excelRows = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[Sheet]);
+                        var sheetName = workbook.SheetNames[i].replace(/ /g, '');
+                        var arraySheetName = sheetName.replace("-", '');
+                        var obj = excelRows;
+                        var key = Object.keys(obj);
+                        progress = progress + berekenProgress;
+                        localStorage.setItem("progress",progress);
+                        console.log("gates progress:" + progress);
+                        dialog.setProgress(localStorage.getItem("progress"));
+                        geladenAssets = geladenAssets + 1;
+                        dialog.setText("Asset " + geladenAssets + " of " + aantalAssets+ " loaded");
+
+                      }
+                      console.log(value.uniqueName +"RoutePoints");
+                      //console.log("excelrows: " + JSON.stringify(obj,null,2));
+                      localStorage.setItem(value.uniqueName + "RoutePoints",JSON.stringify(obj,null,2));
+                    };
+                    req.send();
+                    //-------------------------------------------------------------------------------
+                  });
+                  localStorage.setItem("routeNames", JSON.stringify(localstorageRouteNames));
+                  alert("localstorage aangemaakt");
+              
+                //console.log(routeData[0][0]);
+                
+              });
+                //---------------------------------------------------------------------------------------------------
+
+                //----------------------------Data over gates ophalen-------------------------------------------------
+              var gates = [];
+              try
+              {
+                var refGates = firebase.database().ref('flamelink/environments/production/content/gates/en-US');
+                refGates.on("value", function(snapshot) 
+                {
+                  if (snapshot.exists()) 
+                  {
+                    //console.log("aantal children : " + snapshot.numChildren());
+                    snapshot.forEach(function(childSnapshot)  
+                    {
+                      var childData = childSnapshot.val();
+                      //console.log(childData);
+                      for (var key of Object.keys(childData)) 
+                      {
+                        if(key == "__meta__")
+                        {
+                          delete childData[key];
+                        }
+                      }
+                      gates.push(childData);
+                      //console.log(childData);
                       progress = progress + berekenProgress;
                       localStorage.setItem("progress",progress);
                       console.log("gates progress:" + progress);
                       dialog.setProgress(localStorage.getItem("progress"));
                       geladenAssets = geladenAssets + 1;
                       dialog.setText("Asset " + geladenAssets + " of " + aantalAssets+ " loaded");
-
-                    }
-                    console.log(value.uniqueName +"RoutePoints");
-                    //console.log("excelrows: " + JSON.stringify(obj,null,2));
-                    localStorage.setItem(value.uniqueName + "RoutePoints",JSON.stringify(obj,null,2));
-                  };
-                  req.send();
-                  //-------------------------------------------------------------------------------
-                });
-                localStorage.setItem("routeNames", JSON.stringify(localstorageRouteNames));
-                alert("localstorage aangemaakt");
-            
-              //console.log(routeData[0][0]);
-              
-            });
-              //---------------------------------------------------------------------------------------------------
-
-              //----------------------------Data over gates ophalen-------------------------------------------------
-            var gates = [];
-            var refGates = firebase.database().ref('flamelink/environments/production/content/gates/en-US');
-            refGates.on("value", function(snapshot) 
-            {
-              if (snapshot.exists()) 
-              {
-                //console.log("aantal children : " + snapshot.numChildren());
-                snapshot.forEach(function(childSnapshot)  
-                {
-                  var childData = childSnapshot.val();
-                  //console.log(childData);
-                  for (var key of Object.keys(childData)) 
-                  {
-                    if(key == "__meta__")
-                    {
-                      delete childData[key];
-                    }
+                    });
+                    localStorage.setItem("Gates",JSON.stringify(gates));
                   }
-                  gates.push(childData);
-                  //console.log(childData);
-                  progress = progress + berekenProgress;
-                  localStorage.setItem("progress",progress);
-                  console.log("gates progress:" + progress);
-                  dialog.setProgress(localStorage.getItem("progress"));
-                  geladenAssets = geladenAssets + 1;
-                  dialog.setText("Asset " + geladenAssets + " of " + aantalAssets+ " loaded");
+                  else 
+                  {
+                    console.log("No data available");
+                  } 
+                  
                 });
-                localStorage.setItem("Gates",JSON.stringify(gates));
+                //-----------------------------------------------------------------------------------------------------
+                localStorage.setItem("EersteKeerGeladen","true");
+                alert("eerstekeergelanden = TRUE");
+
               }
-              else 
+              catch(err)
               {
-                console.log("No data available");
+                console.log("laatste assets laden: " + err);
               }
               
-            });
-              //-----------------------------------------------------------------------------------------------------
-              localStorage.setItem("EersteKeerGeladen","true");
-          }
-          else
-          {
-            console.log("data al opgehaald");
-            dialog.close();
-            var coordinatesToCalculate = JSON.parse(localStorage.getItem("KoningklijkeWandelingRoutePoints"));
-            var punt1;
-            var punt2;
-            var puntdistance = 0;
-            for(var i = 0; i < coordinatesToCalculate.length; i++)
-            {
-              //console.log(coordinatesToCalculate[i].lat);
-              if(i>0)
-              {
-                punt1 = [JSON.stringify(coordinatesToCalculate[i-1].lat), JSON.stringify(coordinatesToCalculate[i-1].lng)];
-                punt2 = [JSON.stringify(coordinatesToCalculate[i].lat), JSON.stringify(coordinatesToCalculate[i].lng)];
-                
-                var punt1lat = JSON.parse(punt1[0]);
-                var punt1lng = JSON.parse(punt1[1]);
-                var punt2lat = JSON.parse(punt2[0]);
-                var punt2lng = JSON.parse(punt2[1]);
-                var rad = function(x) {
-                  return x * Math.PI / 180;
-                };
-                var R = 6371000; // Earth’s mean radius in meter
-                var dLat = rad(punt2lat - punt1lat);
-                var dLong = rad(punt2lng - punt1lng);
-                var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                  Math.cos(rad(punt1lat)) * Math.cos(rad(punt2lat)) *
-                  Math.sin(dLong / 2) * Math.sin(dLong / 2);
-                var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                var d = R * c;
-                puntdistance = puntdistance + d;
-                //console.log("distance in meter: " + d); // returns the distance in meter
-              }
             }
-            //console.log("totale distance: " + puntdistance);
+            else
+            {
+              console.log("data al opgehaald");
+              dialog.close();
+              var coordinatesToCalculate = JSON.parse(localStorage.getItem("KoningklijkeWandelingRoutePoints"));
+              var punt1;
+              var punt2;
+              var puntdistance = 0;
+              for(var i = 0; i < coordinatesToCalculate.length; i++)
+              {
+                //console.log(coordinatesToCalculate[i].lat);
+                if(i>0)
+                {
+                  punt1 = [JSON.stringify(coordinatesToCalculate[i-1].lat), JSON.stringify(coordinatesToCalculate[i-1].lng)];
+                  punt2 = [JSON.stringify(coordinatesToCalculate[i].lat), JSON.stringify(coordinatesToCalculate[i].lng)];
+                  
+                  var punt1lat = JSON.parse(punt1[0]);
+                  var punt1lng = JSON.parse(punt1[1]);
+                  var punt2lat = JSON.parse(punt2[0]);
+                  var punt2lng = JSON.parse(punt2[1]);
+                  var rad = function(x) {
+                    return x * Math.PI / 180;
+                  };
+                  var R = 6371000; // Earth’s mean radius in meter
+                  var dLat = rad(punt2lat - punt1lat);
+                  var dLong = rad(punt2lng - punt1lng);
+                  var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                    Math.cos(rad(punt1lat)) * Math.cos(rad(punt2lat)) *
+                    Math.sin(dLong / 2) * Math.sin(dLong / 2);
+                  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                  var d = R * c;
+                  puntdistance = puntdistance + d;
+                  //console.log("distance in meter: " + d); // returns the distance in meter
+                }
+              }
+              //console.log("totale distance: " + puntdistance);
+            }
           }
-        }
-        var progressinterval = setInterval(function()
-        {
-          if(localStorage.getItem("progress") >99)
+          var progressinterval = setInterval(function()
           {
-            clearInterval(progressinterval);
-            dialog.close();
-          }
-        })
-        
-        
-      }, 200);
-      localStorage.setItem("RouteDrawn","initial");
-      localStorage.setItem("MapNLInitialised","false");
-      //---------------------------------------------------------------------------
-
-
-    }
-    else if(internetStatus == "Offline" && localStorage.getItem("EersteKeerGeladen") == "false")
-    { 
-      if (confirm('Zet je wifi of 4G aan zodat alles ingeladen kan worden. Dit hoeft maar 1 keer te gebeuren')) 
-      {
-        infoOphalen();
-      } 
-      else 
-      {
-        //infoOphalen();
+            if(localStorage.getItem("progress") >99)
+            {
+              clearInterval(progressinterval);
+              dialog.close();
+            }
+          })
+        }, 200);
+        localStorage.setItem("RouteDrawn","initial");
+        localStorage.setItem("MapNLInitialised","false");
+        //---------------------------------------------------------------------------
       }
-    }
-    else if(internetStatus == "Offline" && localStorage.getItem("EersteKeerGeladen") == null)
-    {
-      if (confirm('Zet je wifi of 4G aan zodat alles ingeladen kan worden. Dit hoeft maar 1 keer te gebeuren')) 
-      {
-        infoOphalen();
-      } 
-      else 
-      {
-        //infoOphalen();
+      else if(internetStatus == "Offline" && (localStorage.getItem("EersteKeerGeladen") == "false" || localStorage.getItem("EersteKeerGeladen") == null))
+      { 
+        if (confirm('Zet je wifi of 4G aan zodat alles ingeladen kan worden. Dit hoeft maar 1 keer te gebeuren')) 
+        {
+          //CheckInternet();/*kan misschien verwijderd worden op deze plaats*/
+          infoOphalen();
+        } 
+        else 
+        {
+          var dialog = app.dialog.progress();
+          dialog.setText("Sluit applicatie en open met internet");
+        }
       }
-    }
-
-  },200)
+    },600)
+  }
+  
   
   if (navigator.geolocation) 
   {
@@ -329,7 +410,7 @@ function infoOphalen ()
     console.log(long);
     })
   }
-}
+},100);
 function Kaart(routePoints)
 {
   var mapLoad = "";
@@ -436,16 +517,33 @@ function Kaart(routePoints)
   }
   else if(localStorage.getItem("MapNLInitialised") == "true")
   {
-    mymap.remove();
-    mymap = L.map('mapid',
-       {
-         maxBounds: [
-            //south west
-            [50.680033, 4.313562],
-            //north east
-            [50.877788, 4.605838]
-          ] 
-        }).setView([50.791487, 4.448756], 13);
+    try
+    {
+      mymap.remove();
+    }
+    catch(err)
+    {
+      console.log("verwijderen map : " + err);
+    }
+    var mapinterval = setInterval(function()
+    {
+      var mapcontainer = document.getElementById("mapid");
+      if(mapcontainer != null)
+      {
+        clearInterval(mapinterval); 
+        mymap = L.map('mapid',
+        {
+          maxBounds: [
+             //south west
+             [50.680033, 4.313562],
+             //north east
+             [50.877788, 4.605838]
+           ] 
+         }).setView([50.791487, 4.448756], 13);
+         
+      }
+    },100)
+   
     var internetCheck = setInterval(function()
     {
       if(localStorage.getItem("InternetStatus") == "Online")
