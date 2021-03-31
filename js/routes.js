@@ -101,6 +101,10 @@ var routes = [
     path: '/leaflet/',
     url: './pages/leaflettest.html',
   },
+  {
+    path: '/mapdownload/',
+    url: './pages/mapdownload.html',
+  },
   // Default route (404 page). MUST BE THE LAST
   {
     path: '(.*)',

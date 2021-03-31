@@ -1,34 +1,41 @@
-//const { element } = require("prop-types");
-//const { object } = require("prop-types");
 
-//const { xlink_attr } = require("svelte/internal");
 
 // Dom7
 var $ = Dom7;
-
 // Theme
 var theme = 'auto';
-if (document.location.search.indexOf('theme=') >= 0) {
+if (document.location.search.indexOf('theme=') >= 0) 
+{
   theme = document.location.search.split('theme=')[1].split('&')[0];
 }
-
-// Init App
-var app = new Framework7({
-  id: 'io.framework7.testapp',
-  root: '#app',
-  theme: theme,
-  routes: routes,
-  materialRipple: false,
-  fastClicks: false,
-  activeState: false,
-  tapHold: false,
-  tapHoldPreventClicks: false,
-  swipeBackPage: false,
-  navbar: {
-    mdCenterTitle: true
-  },
+localStorage.setItem("firebaseScriptsLoaded","false");
+try{
+  // Init App
+  var app = new Framework7(
+  {
+    id: 'io.framework7.testapp',
+    root: '#app',
+    theme: theme,
+    routes: routes,
+    materialRipple: false,
+    fastClicks: false,
+    activeState: false,
+    tapHold: false,
+    tapHoldPreventClicks: false,
+    swipeBackPage: false,
+    navbar: 
+    {
+      mdCenterTitle: true
+    },
+  });
   
-});
+  localStorage.setItem("Framework7Initialised", "true");
+}
+catch(err)
+{
+  console.log(err);
+}
+
 
 
 /*firebase initialisation*/
@@ -56,24 +63,176 @@ function addScripts()
   localStorage.setItem("firebaseScriptsLoaded","true");
 }
 */
+Setup();
+function Setup()
+{
+  if(localStorage.getItem("reloaded") == null)
+  {
+    localStorage.setItem("reloaded","false");
+    console.log("set reloaded");
+  }
+  checkConnection();
+  getStatus();
+  var ScriptAndUpdateCheckInterval = setInterval(function(){
+    if(localStorage.getItem("InternetStatus") != null && localStorage.getItem("firebaseScriptsLoaded") == "true")
+    {
+      clearInterval(ScriptAndUpdateCheckInterval);
+      ScriptAndUpdateCheck();
+    }
+  }, 200);
+  
+}
+
+
+function getStatus()
+{
+  var internetStatus;
+  var x = setInterval(function()
+  {
+    if(localStorage.getItem("InternetStatus")!= null)
+    {
+      internetStatus = localStorage.getItem("InternetStatus");
+      clearInterval(x);
+      var confirminterval = setInterval(function()
+      {
+        if(internetStatus == "Offline" && (localStorage.getItem("EersteKeerGeladen") == "false" || localStorage.getItem("EersteKeerGeladen") == null))
+        { 
+          if (confirm('Zet je wifi of 4G aan zodat alles ingeladen kan worden. Dit hoeft maar 1 keer te gebeuren')) 
+          {
+            //CheckInternet();/*kan misschien verwijderd worden op deze plaats*/
+            clearInterval(confirminterval);
+            checkConnection();
+            getStatus();
+          } 
+          else 
+          {
+            clearInterval(confirminterval);
+            checkConnection();
+            getStatus();
+          }
+        }
+        if(internetStatus == "Online")
+        {
+          clearInterval(confirminterval);
+          console.log("oke laad scripts");
+          loadScripts();
+        }
+      },200);
+    }
+  },100);
+}
+
+
+function loadScripts()
+{
+  try
+  {
+    var div = document.getElementById("firebaseScripts");
+    var firebaseScript1 = document.createElement("script");
+    firebaseScript1.src = "https://www.gstatic.com/firebasejs/8.2.7/firebase-app.js";
+    document.body.appendChild(firebaseScript1);
+  }
+  catch(err)
+  {
+    alert("initialisatie eerste firebase script: " + err);
+  }
+
+  var searchscriptInterval = setInterval(() => 
+  {
+    var script1 = document.querySelector('script[src="https://www.gstatic.com/firebasejs/8.2.7/firebase-app.js"]');
+    if(script1 != null)
+    {
+      console.log("niet null");
+      clearInterval(searchscriptInterval);
+      try
+      {
+          var firebaseScript2 = document.createElement("script");
+          firebaseScript2.src = "https://www.gstatic.com/firebasejs/8.2.7/firebase-database.js";
+          document.body.appendChild(firebaseScript2);
+      }
+      catch(err)
+      {
+        alert("initialisatie 2e firebase script: " + err);
+      }
+    }
+    else
+    {
+      console.log("null");
+    }
+  }, 100);
+
+  var searchscript2Interval = setInterval(() => 
+  {
+    var script2 = document.querySelector('script[src="https://www.gstatic.com/firebasejs/8.2.7/firebase-database.js"]');
+    if(script2 != null)
+    {
+      clearInterval(searchscript2Interval);
+      try
+      {
+          var firebaseScript3 = document.createElement("script");
+          firebaseScript3.src = "https://www.gstatic.com/firebasejs/8.2.7/firebase-storage.js";
+          document.body.appendChild(firebaseScript3);
+          localStorage.setItem("firebaseScriptsLoaded","true");
+      }
+      catch(err)
+      {
+        alert("initialisatie 3e firebase script: " + err);
+      }
+      
+    }
+  },100);
+}
+
+function checkConnection()
+{
+  var xhr = new XMLHttpRequest();
+  var file = "https://i.imgur.com/7ofBNix.png";
+  var randomNum = Math.round(Math.random() * 10000);
+
+  xhr.open('HEAD', file + "?rand=" + randomNum, true);
+  xhr.send();
+    
+  xhr.addEventListener("readystatechange", processRequest, false);
+
+  function processRequest(e) 
+  {
+    if (xhr.readyState == 4) 
+    {
+      if (xhr.status >= 200 && xhr.status < 304) 
+      {
+        //online
+        localStorage.setItem("InternetStatus","Online");
+        console.log("Online");
+      } 
+      else 
+      {
+        //offline
+        localStorage.setItem("InternetStatus","Offline");
+        console.log("Offline");
+      }
+    }
+  }
+}
+
+
 function AantalAssets()
 {
-  alert("in aantalassets");
+  //alert("in aantalassets");
   var x = 0;
   try
   {
     var refroutes = firebase.database().ref('flamelink/environments/production/content/routes/en-US');
     firebase.database().ref(refroutes).on('value', function(snapshot)
     {
-      alert("in firebase query");
+      //alert("in firebase query");
       x = snapshot.numChildren();
       var refGates = firebase.database().ref('flamelink/environments/production/content/gates/en-US');
       refGates.on("value", function(gatesnapshot) 
       {
-        alert("in laatste query");
+        //alert("in laatste query");
         x = x + gatesnapshot.numChildren();
         localStorage.setItem("aantalAssets",x);
-        alert("aantal assets:" + x);
+        //alert("aantal assets:" + x);
       });
     });
   }
@@ -99,318 +258,278 @@ function CheckInternet()
     {
       if (xhr.status >= 200 && xhr.status < 304) 
       {
-        alert("online");
+        //alert("online");
         localStorage.setItem("InternetStatus","Online");
 
       } 
       else 
       {
-        alert("offline");
+        //alert("offline");
         localStorage.setItem("InternetStatus","Offline");
       }
     }
   }
 }
-var infoOphalenInterval = setInterval(function()
+function InizializeFirebase()
 {
-  /*-----------------------check als gebruiker internet heeft of niet--------------------*/
-  CheckInternet();
-  /*
-  var internetInverval = setInterval(function() 
-  {
-    CheckInternet()
-  }, 5000);
-  */
-/*------------------------------------------------------------------*/
-
   if(localStorage.getItem("firebaseScriptsLoaded") == "true")
   {
-    clearInterval(infoOphalenInterval);
-    setTimeout(function()
+    //clearInterval(beginInterval);
+    //alert("firebasescriptsloaded = TRUE");
+    try
     {
-      var internetStatus = localStorage.getItem("InternetStatus");
-      alert("internetstatus:" + internetStatus);
-      alert("eerstekeergeladen:" + localStorage.getItem("EersteKeerGeladen"));
-      if(internetStatus == "Online" && localStorage.getItem("EersteKeerGeladen") == null)
+      firebaseConfig = 
       {
-        //addScripts();
-        if(localStorage.getItem("firebaseScriptsLoaded") == "true")
-        {
-          alert("firebasescriptsloaded = TRUE");
-          try
-          {
-            firebaseConfig = 
-            {
-              apiKey: "AIzaSyBRh6vB7DoTxaH9jz4BgEIBMfkKxmHO-sg",
-              authDomain: "zonienwoud-b21d4.firebaseapp.com",
-              databaseURL: "https://zonienwoud-b21d4.firebaseio.com",
-              projectId: "zonienwoud-b21d4",
-              storageBucket: "zonienwoud-b21d4.appspot.com",
-              messagingSenderId: "675674796995",
-              appId: "1:675674796995:web:b073e15b7413f9ea"
-            };
-          }
-          catch(err)
-          {
-            alert("define firebase: " + err);
-          }
-          try
-          {
-            firebase.initializeApp(firebaseConfig);
-          }
-          catch(err)
-          {
-            alert("initialize error" + err);
-          }
-          try
-          {
-            database = firebase.database();
-          }
-          catch(err)
-          {
-            alert("database error" + err);
-          }
-          try
-          {
-            storage = firebase.storage();
-          }
-          catch(err)
-          {
-            alert("storage error" + err);
-          }
-        }
-        // voor deze 3 lijnen appart een try catch doen
-        
-        /*firebase.initializeApp(firebaseConfig);
-        database = firebase.database();
-        storage = firebase.storage();*/
-        alert("begin is online");
-        //---------------------------------------------------------------------------
+        apiKey: "AIzaSyBRh6vB7DoTxaH9jz4BgEIBMfkKxmHO-sg",
+        authDomain: "zonienwoud-b21d4.firebaseapp.com",
+        databaseURL: "https://zonienwoud-b21d4.firebaseio.com",
+        projectId: "zonienwoud-b21d4",
+        storageBucket: "zonienwoud-b21d4.appspot.com",
+        messagingSenderId: "675674796995",
+        appId: "1:675674796995:web:b073e15b7413f9ea"
+      };
+    }
+    catch(err)
+    {
+      console.log("define firebase: " + err);
+    }
+    try
+    {
+      firebase.initializeApp(firebaseConfig);
+    }
+    catch(err)
+    {
+      console.log("initialize error" + err);
+    }
+    try
+    {
+      database = firebase.database();
+    }
+    catch(err)
+    {
+      console.log("database error" + err);
+    }
+    try
+    {
+      storage = firebase.storage();
+    }
+    catch(err)
+    {
+      console.log("storage error" + err);
+    }
+  }
+}
+function infoOphalen()
+{
+  //addScripts();
+  InizializeFirebase();
+  // voor deze 3 lijnen appart een try catch doen
+  
+  /*firebase.initializeApp(firebaseConfig);
+  database = firebase.database();
+  storage = firebase.storage();*/
+  //alert("begin is online");
+  //---------------------------------------------------------------------------
+  try
+  {
+    AantalAssets();
+  }
+  catch(err)
+  {
+    alert(err);
+  }
+  
+  var aantalAssets = 0;
+  var geladenAssets = 0;
+  var progress = 0;
+  var dialog = app.dialog.progress('Loading assets', progress);
+  var assetsInterval = setInterval(function()
+  {
+    if(localStorage.getItem("aantalAssets") != null)
+    {
+      //alert("aantalassets niet null");
+      aantalAssets = localStorage.getItem("aantalAssets");
+      dialog.setText("Asset 0 of " + aantalAssets+ " loaded");
+      clearInterval(assetsInterval);
+      //alert("het is na de dialog code");
+      var berekenProgress =  100 / aantalAssets;
+      //console.log("aantal assets: " + aantalAssets);
+      //console.log("aantal assets = " + aantalAssets);
+      
+      if(localStorage.getItem("EersteKeerGeladen") == null)
+      {
+        //alert("het is null");
+        localStorage.setItem("EersteKeerGeladen","false");
+      }
+      if(localStorage.getItem("EersteKeerGeladen") == "false")
+      {
+        //----------------------------Data over gates ophalen-------------------------------------------------
+        var gates = [];
         try
         {
-          AantalAssets();
+          //alert("gates ophalen");
+          var refGates = firebase.database().ref('flamelink/environments/production/content/gates/en-US');
+          refGates.on("value", function(snapshot) 
+          {
+            if (snapshot.exists()) 
+            {
+              //console.log("aantal children : " + snapshot.numChildren());
+              snapshot.forEach(function(childSnapshot)  
+              {
+                var childData = childSnapshot.val();
+                //console.log(childData);
+                for (var key of Object.keys(childData)) 
+                {
+                  if(key == "__meta__")
+                  {
+                    delete childData[key];
+                  }
+                }
+                gates.push(childData);
+                //console.log(childData);
+                progress = progress + berekenProgress;
+                localStorage.setItem("progress",progress);
+                console.log("gates progress:" + progress);
+                dialog.setProgress(localStorage.getItem("progress"));
+                geladenAssets = geladenAssets + 1;
+                localStorage.setItem("geladenAssets", geladenAssets);
+                dialog.setText("Asset " + geladenAssets + " of " + aantalAssets+ " loaded");
+              });
+              localStorage.setItem("Gates",JSON.stringify(gates));
+            }
+            else 
+            {
+              console.log("No data available");
+            } 
+          });
+          //-----------------------------------------------------------------------------------------------------
         }
         catch(err)
         {
-          alert(err);
+          console.log("laatste assets laden: " + err);
         }
-        
-        var aantalAssets = 0;
-        var geladenAssets = 0;
-        var progress = 0;
-        var dialog = app.dialog.progress('Loading assets', progress);
-        dialog.setText("Asset 0 of " + aantalAssets+ " loaded");
-        var assetsInterval = setInterval(function()
+        //------------------------------------Data over routes ophalen---------------------------------
+        var localstorageRouteNames = [];
+        //alert("net voor try");
+        try
         {
-          if(localStorage.getItem("aantalAssets") != null)
+          var refroutes = firebase.database().ref('flamelink/environments/production/content/routes/en-US');
+          firebase.database().ref(refroutes).on('value', function(snapshot)
           {
-            alert("aantalassets niet null");
-            clearInterval(assetsInterval);
-            aantalAssets = localStorage.getItem("aantalAssets");
-            var berekenProgress =  100 / aantalAssets;
-            //console.log("aantal assets: " + aantalAssets);
-            //console.log("aantal assets = " + aantalAssets);
-            
-            if(localStorage.getItem("EersteKeerGeladen") == null)
+            //alert("in de firebase.on voor laatste assets");
+            snapshot.forEach(function(childSnapshot)  
             {
-              alert("het is null");
-              localStorage.setItem("EersteKeerGeladen","false");
-            }
-            if(localStorage.getItem("EersteKeerGeladen") == "false")
-            {
-              //------------------------------------Data over routes ophalen---------------------------------
-              var localstorageRouteNames = [];
-              var refroutes = firebase.database().ref('flamelink/environments/production/content/routes/en-US');
-              firebase.database().ref(refroutes).on('value', function(snapshot)
+              //alert("in de foreach voor laatste assets");
+              var value = childSnapshot.val();
+              for (var key of Object.keys(value)) 
               {
-                  snapshot.forEach(function(childSnapshot)  
-                  {
-                    var value = childSnapshot.val();
-                    for (var key of Object.keys(value)) 
-                    {
-                      if(key == "__meta__")
-                      {
-                        //console.log(key + " -> " + x[key]);
-                        delete value[key];
-                      }
-                      // console.log(key + " -> " + x[key]);
-                    }
-                    localstorageRouteNames.push(value.uniqueName)
-                    localStorage.setItem(value.uniqueName, JSON.stringify(value));
-                    //-----------------------Excel fetch----------------------------------------------
-                    var url = value.routePoints;
-
-                    /* set up async GET request */
-                    var req = new XMLHttpRequest();
-                    req.open("GET", url, true);
-                    req.responseType = "arraybuffer";
-                    
-                    req.onload = function(e) 
-                    {
-                      var data = new Uint8Array(req.response);
-                      var workbook = XLSX.read(data, {type:"array"});
-                    
-                      /* DO SOMETHING WITH workbook HERE */
-                      var numberOfSheets = workbook.SheetNames.length;
-                      for (var i = 0; i < numberOfSheets; i++) 
-                      {  
-                        var Sheet = workbook.SheetNames[i];
-                        var excelRows = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[Sheet]);
-                        var sheetName = workbook.SheetNames[i].replace(/ /g, '');
-                        var arraySheetName = sheetName.replace("-", '');
-                        var obj = excelRows;
-                        var key = Object.keys(obj);
-                        progress = progress + berekenProgress;
-                        localStorage.setItem("progress",progress);
-                        console.log("gates progress:" + progress);
-                        dialog.setProgress(localStorage.getItem("progress"));
-                        geladenAssets = geladenAssets + 1;
-                        dialog.setText("Asset " + geladenAssets + " of " + aantalAssets+ " loaded");
-
-                      }
-                      console.log(value.uniqueName +"RoutePoints");
-                      //console.log("excelrows: " + JSON.stringify(obj,null,2));
-                      localStorage.setItem(value.uniqueName + "RoutePoints",JSON.stringify(obj,null,2));
-                    };
-                    req.send();
-                    //-------------------------------------------------------------------------------
-                  });
-                  localStorage.setItem("routeNames", JSON.stringify(localstorageRouteNames));
-                  alert("localstorage aangemaakt");
-              
-                //console.log(routeData[0][0]);
-                
-              });
-                //---------------------------------------------------------------------------------------------------
-
-                //----------------------------Data over gates ophalen-------------------------------------------------
-              var gates = [];
+                if(key == "__meta__")
+                {
+                  //console.log(key + " -> " + x[key]);
+                  delete value[key];
+                }
+                // console.log(key + " -> " + x[key]);
+              }
+              localstorageRouteNames.push(value.uniqueName)
+              localStorage.setItem(value.uniqueName, JSON.stringify(value));
+              //-----------------------Excel fetch----------------------------------------------
+              var url = value.routePoints;
               try
               {
-                var refGates = firebase.database().ref('flamelink/environments/production/content/gates/en-US');
-                refGates.on("value", function(snapshot) 
+                /* set up async GET request */
+                var req = new XMLHttpRequest();
+                req.open("GET", url, true);
+                req.responseType = "arraybuffer";
+                
+                req.onload = function(e) 
                 {
-                  if (snapshot.exists()) 
-                  {
-                    //console.log("aantal children : " + snapshot.numChildren());
-                    snapshot.forEach(function(childSnapshot)  
+                  var data = new Uint8Array(req.response);
+                  var workbook = XLSX.read(data, {type:"array"});
+                
+                  /* DO SOMETHING WITH workbook HERE */
+                  var numberOfSheets = workbook.SheetNames.length;
+                  for (var i = 0; i < numberOfSheets; i++) 
+                  {  
+                    //alert("in de for voor laatste assets");
+                    var Sheet = workbook.SheetNames[i];
+                    var excelRows = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[Sheet]);
+                    var sheetName = workbook.SheetNames[i].replace(/ /g, '');
+                    var arraySheetName = sheetName.replace("-", '');
+                    var obj = excelRows;
+                    var key = Object.keys(obj);
+                    progress = progress + berekenProgress;
+                    localStorage.setItem("progress",progress);
+                    //alert("geladen assets:" + geladenAssets);
+                    try
                     {
-                      var childData = childSnapshot.val();
-                      //console.log(childData);
-                      for (var key of Object.keys(childData)) 
-                      {
-                        if(key == "__meta__")
-                        {
-                          delete childData[key];
-                        }
-                      }
-                      gates.push(childData);
-                      //console.log(childData);
-                      progress = progress + berekenProgress;
-                      localStorage.setItem("progress",progress);
-                      console.log("gates progress:" + progress);
                       dialog.setProgress(localStorage.getItem("progress"));
                       geladenAssets = geladenAssets + 1;
+                      localStorage.setItem("geladenAssets", geladenAssets);
+                    }
+                    catch(err)
+                    {
+                      alert("route error: " + err);
+                    }
+                    try
+                    {
                       dialog.setText("Asset " + geladenAssets + " of " + aantalAssets+ " loaded");
-                    });
-                    localStorage.setItem("Gates",JSON.stringify(gates));
+                      localStorage.setItem(value.uniqueName + "RoutePoints",JSON.stringify(obj,null,2));
+                    }
+                    catch(err)
+                    {
+                      alert("dialog en routepoints localstorage: " + err);
+                    }
                   }
-                  else 
-                  {
-                    console.log("No data available");
-                  } 
-                  
-                });
-                //-----------------------------------------------------------------------------------------------------
-                localStorage.setItem("EersteKeerGeladen","true");
-                alert("eerstekeergelanden = TRUE");
-
+                  //alert( geladenAssets+ " routes opgehaald");
+                 
+                  //console.log(value.uniqueName +"RoutePoints");
+                };
+                req.send();
               }
               catch(err)
               {
-                console.log("laatste assets laden: " + err);
+                alert("xml request error: " + err);
               }
-              
-            }
-            else
-            {
-              console.log("data al opgehaald");
-              dialog.close();
-              var coordinatesToCalculate = JSON.parse(localStorage.getItem("KoningklijkeWandelingRoutePoints"));
-              var punt1;
-              var punt2;
-              var puntdistance = 0;
-              for(var i = 0; i < coordinatesToCalculate.length; i++)
-              {
-                //console.log(coordinatesToCalculate[i].lat);
-                if(i>0)
-                {
-                  punt1 = [JSON.stringify(coordinatesToCalculate[i-1].lat), JSON.stringify(coordinatesToCalculate[i-1].lng)];
-                  punt2 = [JSON.stringify(coordinatesToCalculate[i].lat), JSON.stringify(coordinatesToCalculate[i].lng)];
-                  
-                  var punt1lat = JSON.parse(punt1[0]);
-                  var punt1lng = JSON.parse(punt1[1]);
-                  var punt2lat = JSON.parse(punt2[0]);
-                  var punt2lng = JSON.parse(punt2[1]);
-                  var rad = function(x) {
-                    return x * Math.PI / 180;
-                  };
-                  var R = 6371000; // Earth’s mean radius in meter
-                  var dLat = rad(punt2lat - punt1lat);
-                  var dLong = rad(punt2lng - punt1lng);
-                  var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                    Math.cos(rad(punt1lat)) * Math.cos(rad(punt2lat)) *
-                    Math.sin(dLong / 2) * Math.sin(dLong / 2);
-                  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                  var d = R * c;
-                  puntdistance = puntdistance + d;
-                  //console.log("distance in meter: " + d); // returns the distance in meter
-                }
-              }
-              //console.log("totale distance: " + puntdistance);
-            }
-          }
-          var progressinterval = setInterval(function()
-          {
-            if(localStorage.getItem("progress") >99)
-            {
-              clearInterval(progressinterval);
-              dialog.close();
-            }
-          })
-        }, 200);
-        localStorage.setItem("RouteDrawn","initial");
-        localStorage.setItem("MapNLInitialised","false");
-        //---------------------------------------------------------------------------
-      }
-      else if(internetStatus == "Offline" && (localStorage.getItem("EersteKeerGeladen") == "false" || localStorage.getItem("EersteKeerGeladen") == null))
-      { 
-        if (confirm('Zet je wifi of 4G aan zodat alles ingeladen kan worden. Dit hoeft maar 1 keer te gebeuren')) 
-        {
-          //CheckInternet();/*kan misschien verwijderd worden op deze plaats*/
-          infoOphalen();
-        } 
-        else 
-        {
-          var dialog = app.dialog.progress();
-          dialog.setText("Sluit applicatie en open met internet");
+              //-------------------------------------------------------------------------------
+            });
+              localStorage.setItem("routeNames", JSON.stringify(localstorageRouteNames));
+              //alert("localstorage aangemaakt");
+          
+            //console.log(routeData[0][0]);
+            
+          });
         }
+        catch(err)
+        {
+          alert("eerste assets laden: " + err);
+        }
+          //---------------------------------------------------------------------------------------------------
+        
       }
-    },600)
-  }
-  
-  
-  if (navigator.geolocation) 
-  {
-    navigator.geolocation.getCurrentPosition((position)=>
+      else
+      {
+        alert("data al opgehaald");
+        dialog.close();
+      }
+    }
+    var progressinterval = setInterval(function()
     {
-    var lat  = position.coords.latitude;
-    const long = position.coords.longitude
-    console.log(lat);
-    console.log(long);
-    })
-  }
-},100);
+      if(localStorage.getItem("progress") >99)
+      {
+        //alert("progress is voltooid");
+        clearInterval(progressinterval);
+        dialog.close();
+        localStorage.setItem("EersteKeerGeladen","true");
+        //alert("eerstekeergelanden = TRUE");
+      }
+    },200);
+  }, 100);
+  localStorage.setItem("RouteDrawn","initial");
+  localStorage.setItem("MapNLInitialised","false");
+  //---------------------------------------------------------------------------
+}
+
+
 function Kaart(routePoints)
 {
   var mapLoad = "";
@@ -421,99 +540,93 @@ function Kaart(routePoints)
   }
   if(localStorage.getItem("MapNLInitialised") == "false")
   {
-    if(localStorage.getItem("InternetStatus") == "Online")
-    {
-      //mymap.remove();
-      mapLoad = "https://api.mapbox.com/styles/v1/groenestapstenenvzw/cjsa2ljft5tgs1ftdjcqr09mo/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZ3JvZW5lc3RhcHN0ZW5lbnZ6dyIsImEiOiJjanMwNzNiN2MwMDhmNGFrdm9pZTlidzhzIn0.9eaZs-fbZSyygtfnyqUEIQ";
-    }
-    else if(localStorage.getItem("InternetStatus") == "Offline")
-    {
-      //mymap.remove();
-      mapLoad = "\map/4uMaps/{z}/{x}/{y}.png";
-    }
-    var mapElementInterval = setInterval(function(){  
-    var elementExists = document.getElementById("mapid");
-    if(elementExists != null) 
-    {
-      clearInterval(mapElementInterval);
-      localStorage.setItem("MapNLInitialised","true");
-      console.log("element bestaat");
-      //----------------------------------------------------------------------------------------------
-      //var mapboxUrl = "https://api.mapbox.com/styles/v1/groenestapstenenvzw/cjsa2ljft5tgs1ftdjcqr09mo/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZ3JvZW5lc3RhcHN0ZW5lbnZ6dyIsImEiOiJjanMwNzNiN2MwMDhmNGFrdm9pZTlidzhzIn0.9eaZs-fbZSyygtfnyqUEIQ";
-      /*leaflet code*/
-       mymap = L.map('mapid',
-       {
-         maxBounds: [
-            //south west
-            [50.680033, 4.313562],
-            //north east
-            [50.877788, 4.605838]
-          ] 
-        }).setView([50.791487, 4.448756], 13);
-       L.tileLayer(mapLoad, {
-       //L.tileLayer('https://api.mapbox.com/styles/v1/groenestapstenenvzw/cjsa2ljft5tgs1ftdjcqr09mo/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZ3JvZW5lc3RhcHN0ZW5lbnZ6dyIsImEiOiJjanMwNzNiN2MwMDhmNGFrdm9pZTlidzhzIn0.9eaZs-fbZSyygtfnyqUEIQ', {
-        maxZoom: 16,
-        minZoom: 12,
-        id: 'mapbox://styles/groenestapstenenvzw/cjsa2ljft5tgs1ftdjcqr09mo',
-        tileSize: 512,
-        zoomOffset: -1,
-      }).addTo(mymap);
-      mymap.locate(
+    //mymap.remove();
+    mapLoad = "\map/{z}/{x}/{y}.png";
+    var mapElementInterval = setInterval(function()
+    {  
+      var elementExists = document.getElementById("mapid");
+      if(elementExists != null) 
       {
-        setView: false, 
-        maxZoom: 16, 
-        watch:true
-      });
-      var layerGroup = L.layerGroup();
-      //console.log(coords);
-      var x = 0;
-      //for(var i = 0; i < coords.length; i++) 
-      //{
-        /*x++
-        if(x == 10)
+        clearInterval(mapElementInterval);
+        localStorage.setItem("MapNLInitialised","true");
+        console.log("element bestaat");
+        //----------------------------------------------------------------------------------------------
+        //var mapboxUrl = "https://api.mapbox.com/styles/v1/groenestapstenenvzw/cjsa2ljft5tgs1ftdjcqr09mo/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZ3JvZW5lc3RhcHN0ZW5lbnZ6dyIsImEiOiJjanMwNzNiN2MwMDhmNGFrdm9pZTlidzhzIn0.9eaZs-fbZSyygtfnyqUEIQ";
+        /*leaflet code*/
+        mymap = L.map('mapid',
         {
-          var rusbroeckMarker = new L.marker([coords[i][0], coords[i][1]]).bindPopup("Dit is een marker op coordinaten " + coords[i][0] + ", " + coords[i][1]);
-        layerGroup.addLayer(rusbroeckMarker);
-          x = 0;
-        }*/
-       /* var boomtestcontent =`
-        <div class="card demo-card-header-pic">
-        <a href="/Event/">
-        <div style="background-image:url(https://cdn.framework7.io/placeholder/nature-1000x600-3.jpg)"
-          class="card-header align-items-flex-end"></div>
-        </a>
-        <div class="card-content card-content-padding">
-          <p class="date">Speciale boom</p>
-          <p>Quisque eget vestibulum nulla. Quisque quis dui quis ex ultricies efficitur vitae non felis. Phasellus
-            quis nibh hendrerit...</p>
-        </div>
-        <!--<div class="card-footer"><a href="#" class="link">Like</a><a href="#" class="link">Read more</a></div>-->
-        </div>
-        `;
-        var coordinatenTestContent = "Dit is een marker op coordinaten " + coords[i][0] + ", " + coords[i][1];
-        var rusbroeckMarker = new L.marker([coords[i][0], coords[i][1]]).bindPopup(coordinatenTestContent);
-        layerGroup.addLayer(rusbroeckMarker); 
-      }*/ 
-      var gpx = 'gpx/middenhutwandeling.gpx';
-      /*new L.G)PX(gpx, {async: true}).on('loaded', function(e) {
-        mymap.fitBounds(e.target.getBounds());
-      }).addTo(mymap); */
-      var RuusbroeckLine =  L.polyline([[coords]],{color: 'red'});
-      layerGroup.addLayer(RuusbroeckLine);
-      /*om naar deze specifieke lijn op de map te gaan*/
-      //mymap.fitBounds(RuusbroeckLine.getBounds());
-      var overlay = 
+          maxBounds: [
+              //south west
+              [50.680033, 4.313562],
+              //north east
+              [50.877788, 4.605838]
+            ] 
+          }).setView([50.791487, 4.448756], 13);
+        L.tileLayer(mapLoad, {
+        //L.tileLayer('https://api.mapbox.com/styles/v1/groenestapstenenvzw/cjsa2ljft5tgs1ftdjcqr09mo/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZ3JvZW5lc3RhcHN0ZW5lbnZ6dyIsImEiOiJjanMwNzNiN2MwMDhmNGFrdm9pZTlidzhzIn0.9eaZs-fbZSyygtfnyqUEIQ', {
+          maxZoom: 16,
+          minZoom: 12,
+          tileSize: 512,
+          zoomOffset: 1,
+        }).addTo(mymap);
+        //mymap.on('load', () => console.log(map.getCanvas().toDataURL()));
+        
+        mymap.locate(
+        {
+          setView: false, 
+          maxZoom: 16, 
+          watch:true
+        });
+        var layerGroup = L.layerGroup();
+        //console.log(coords);
+        var x = 0;
+        //for(var i = 0; i < coords.length; i++) 
+        //{
+          /*x++
+          if(x == 10)
+          {
+            var rusbroeckMarker = new L.marker([coords[i][0], coords[i][1]]).bindPopup("Dit is een marker op coordinaten " + coords[i][0] + ", " + coords[i][1]);
+          layerGroup.addLayer(rusbroeckMarker);
+            x = 0;
+          }*/
+        /* var boomtestcontent =`
+          <div class="card demo-card-header-pic">
+          <a href="/Event/">
+          <div style="background-image:url(https://cdn.framework7.io/placeholder/nature-1000x600-3.jpg)"
+            class="card-header align-items-flex-end"></div>
+          </a>
+          <div class="card-content card-content-padding">
+            <p class="date">Speciale boom</p>
+            <p>Quisque eget vestibulum nulla. Quisque quis dui quis ex ultricies efficitur vitae non felis. Phasellus
+              quis nibh hendrerit...</p>
+          </div>
+          <!--<div class="card-footer"><a href="#" class="link">Like</a><a href="#" class="link">Read more</a></div>-->
+          </div>
+          `;
+          var coordinatenTestContent = "Dit is een marker op coordinaten " + coords[i][0] + ", " + coords[i][1];
+          var rusbroeckMarker = new L.marker([coords[i][0], coords[i][1]]).bindPopup(coordinatenTestContent);
+          layerGroup.addLayer(rusbroeckMarker); 
+        }*/ 
+        var gpx = 'gpx/middenhutwandeling.gpx';
+        /*new L.G)PX(gpx, {async: true}).on('loaded', function(e) {
+          mymap.fitBounds(e.target.getBounds());
+        }).addTo(mymap); */
+        var RuusbroeckLine =  L.polyline([[coords]],{color: 'red'});
+        layerGroup.addLayer(RuusbroeckLine);
+        /*om naar deze specifieke lijn op de map te gaan*/
+        //mymap.fitBounds(RuusbroeckLine.getBounds());
+        var overlay = 
+        {
+          'Ruusbroeck': layerGroup,
+        }; 
+        L.control.layers(null, overlay).addTo(mymap);
+        //----------------------------------------------------------------------------------------
+      }
+      else
       {
-        'Ruusbroeck': layerGroup,
-      }; 
-      L.control.layers(null, overlay).addTo(mymap);
-      //----------------------------------------------------------------------------------------
-    }
-    else
-    {
-      console.log("element bestaat niet");
-    }
-  }, 200);
+        console.log("element bestaat niet");
+      }
+    }, 200);
   }
   else if(localStorage.getItem("MapNLInitialised") == "true")
   {
@@ -543,7 +656,7 @@ function Kaart(routePoints)
          
       }
     },100)
-   
+    /*
     var internetCheck = setInterval(function()
     {
       if(localStorage.getItem("InternetStatus") == "Online")
@@ -563,7 +676,7 @@ function Kaart(routePoints)
         mapLoad = "\map/4uMaps/{z}/{x}/{y}.png";
       }
     }, 2000);  
-
+    */
     if(localStorage.getItem("RouteDrawn") =="initial")
     {
       localStorage.setItem("RouteDrawn","false");
@@ -1003,5 +1116,123 @@ function readURL(input)
       $('#uploadimage').attr('src', e.target.result);
     };
     reader.readAsDataURL(input.files[0]);
+  }
+}
+function ScriptAndUpdateCheck()
+{
+  console.log("infoophaleninterval");
+  /*-----------------------check als gebruiker internet heeft of niet--------------------*/
+  //CheckInternet();
+  /*
+  var internetInverval = setInterval(function() 
+  {
+    CheckInternet()
+  }, 5000);
+  */
+/*------------------------------------------------------------------*/
+
+  if(localStorage.getItem("firebaseScriptsLoaded") == "true")
+  {
+    var internetStatus;
+    console.log("begininterval");
+    internetStatus = localStorage.getItem("InternetStatus");
+    //alert("internetstatus:" + internetStatus);
+    //alert("eerstekeergeladen:" + localStorage.getItem("EersteKeerGeladen"));
+    if(internetStatus == "Online" && localStorage.getItem("EersteKeerGeladen") == null && localStorage.getItem("reloaded") == "false")
+    {
+      localStorage.setItem("reloaded", "true");
+      location.reload();
+    }
+    else if(internetStatus == "Online" && localStorage.getItem("EersteKeerGeladen") == null && localStorage.getItem("reloaded") == "true")
+    {
+      infoOphalen();
+    }
+    else if(internetStatus == "Online" && localStorage.getItem("EersteKeerGeladen") == "true")
+    {
+      InizializeFirebase(); //dit geeft een eror bij de try catch maar zonder dit werkt het niet dusja
+      //---------------------------CHECK VOOR UPDATES------------------------------
+      var refroutes = firebase.database().ref('flamelink/environments/production/content/version/en-US/appVersion');
+      firebase.database().ref(refroutes).once('value', function(snapshot)
+      {
+        var data = snapshot.val();
+        alert("snapshot data = " + data);
+        if(localStorage.getItem("AppVersion") == null)
+        {
+          localStorage.setItem("AppVersion", data);
+        }
+        else
+        {
+          if(localStorage.getItem("AppVersion") != data)
+          {
+            if (confirm('Update Beschikbaar')) 
+            {
+              localStorage.setItem("EersteKeerGeladen","false");
+              localStorage.setItem("AppVersion", data);
+              //CheckInternet();/*kan misschien verwijderd worden op deze plaats*/
+              infoOphalen();
+            } 
+            else 
+            {
+            }
+
+          }
+        }
+        
+      });
+      //----------------------------------------------------------------------------
+
+
+
+      var coordinatesToCalculate = JSON.parse(localStorage.getItem("KoningklijkeWandelingRoutePoints"));
+      var punt1;
+      var punt2;
+      var puntdistance = 0;
+      for(var i = 0; i < coordinatesToCalculate.length; i++)
+      {
+        //console.log(coordinatesToCalculate[i].lat);
+        if(i>0)
+        {
+          punt1 = [JSON.stringify(coordinatesToCalculate[i-1].lat), JSON.stringify(coordinatesToCalculate[i-1].lng)];
+          punt2 = [JSON.stringify(coordinatesToCalculate[i].lat), JSON.stringify(coordinatesToCalculate[i].lng)];
+          
+          var punt1lat = JSON.parse(punt1[0]);
+          var punt1lng = JSON.parse(punt1[1]);
+          var punt2lat = JSON.parse(punt2[0]);
+          var punt2lng = JSON.parse(punt2[1]);
+          var rad = function(x) {
+            return x * Math.PI / 180;
+          };
+          var R = 6371000; // Earth’s mean radius in meter
+          var dLat = rad(punt2lat - punt1lat);
+          var dLong = rad(punt2lng - punt1lng);
+          var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(rad(punt1lat)) * Math.cos(rad(punt2lat)) *
+            Math.sin(dLong / 2) * Math.sin(dLong / 2);
+          var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          var d = R * c;
+          puntdistance = puntdistance + d;
+          //console.log("distance in meter: " + d); // returns the distance in meter
+        }
+      }
+      //console.log("totale distance: " + puntdistance);
+    }
+    else if(internetStatus == "Offline" && localStorage.getItem("EersteKeerGeladen") == "true")
+    {
+
+    }
+  }
+  else
+  {
+    location.reload();
+  }
+  if (navigator.geolocation) 
+  {
+    navigator.geolocation.getCurrentPosition((position)=>
+    {
+    var lat  = position.coords.latitude;
+    const long = position.coords.longitude
+    console.log(lat);
+    console.log(long);
+    });
   }
 }
