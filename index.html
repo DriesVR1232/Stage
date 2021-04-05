@@ -9,11 +9,18 @@
   <meta name="theme-color" content="#2196f3">
   <meta http-equiv="Content-Security-Policy" 
     content="
-    connect-src 'self' https://* wss://*; font-src 'self' https://* blob: data:; frame-src 'self' https://* blob: data:; img-src 'self' https://* blob: data:; media-src 'self' https://* blob: data:; object-src 'self' https://* blob: data:; script-src 'self' https://* 'unsafe-inline' 'unsafe-eval'; style-src 'self' https://* 'unsafe-inline';  
+    connect-src 'self' https://* wss://*; 
+    font-src 'self' https://* blob: data:; 
+    frame-src 'self' https://* blob: data:; 
+    img-src 'self' https://* blob: data:; 
+    media-src 'self' https://* blob: data:; 
+    object-src 'self' https://* blob: data:; 
+    script-src 'self' https://* 'unsafe-inline' 'unsafe-eval'; 
+    style-src 'self' https://* 'unsafe-inline';  
     worker-src blob:; 
-      child-src blob: gap:;
+    child-src blob: gap:;
       
-      default-src * 'self' 'unsafe-inline' 'unsafe-eval' data: gap: content:">
+    default-src * 'self' 'unsafe-inline' 'unsafe-eval' data: gap: content:">
       <!-- img-src 'self' data:; -->
   <title>Zoniënwoud</title>
   <link rel="stylesheet" href="framework7.bundle.min.css">
@@ -25,6 +32,7 @@
   crossorigin=""/>
   <link rel="stylesheet" href="css/route-popup.css">
   <link rel="stylesheet" href="css/probleem-popup.css">
+  <link href='https://api.mapbox.com/mapbox-gl-js/v2.1.1/mapbox-gl.css' rel='stylesheet' />
 </head>
 <body>
   <div id="app">
@@ -57,9 +65,9 @@
   <script src="https://www.gstatic.com/firebasejs/8.2.7/firebase-database.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.2.7/firebase-storage.js"></script>
   -->
-  <!--<script src='https://api.mapbox.com/mapbox-gl-js/v2.1.1/mapbox-gl.js'></script>
-  <script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-language/v0.10.1/mapbox-gl-language.js'></script>
-  -->
+  <!---->
+  <script src='https://api.mapbox.com/mapbox-gl-js/v2.1.1/mapbox-gl.js'></script>
+  
   <script src="leaflet/leaflet.js"></script>
   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.13.5/xlsx.full.min.js"></script>
   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.13.5/jszip.js"></script>

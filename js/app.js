@@ -33,7 +33,7 @@ try{
 }
 catch(err)
 {
-  console.log(err);
+  console.log(" initialize framework7: " + err);
 }
 
 
@@ -63,9 +63,11 @@ function addScripts()
   localStorage.setItem("firebaseScriptsLoaded","true");
 }
 */
+app.dialog.preloader();
 Setup();
 function Setup()
 {
+  localStorage.setItem("MapNLInitialised","false");
   if(localStorage.getItem("reloaded") == null)
   {
     localStorage.setItem("reloaded","false");
@@ -80,7 +82,6 @@ function Setup()
       ScriptAndUpdateCheck();
     }
   }, 200);
-  
 }
 
 
@@ -99,7 +100,7 @@ function getStatus()
         { 
           if (confirm('Zet je wifi of 4G aan zodat alles ingeladen kan worden. Dit hoeft maar 1 keer te gebeuren')) 
           {
-            //CheckInternet();/*kan misschien verwijderd worden op deze plaats*/
+            localStorage.setItem("AppVersion", 0);
             clearInterval(confirminterval);
             checkConnection();
             getStatus();
@@ -111,11 +112,15 @@ function getStatus()
             getStatus();
           }
         }
-        if(internetStatus == "Online")
+        else if(internetStatus == "Online")
         {
           clearInterval(confirminterval);
           console.log("oke laad scripts");
           loadScripts();
+        }
+        else if(internetStatus == "Offline" && (localStorage.getItem("EersteKeerGeladen") == "true"))
+        {
+          app.dialog.close();
         }
       },200);
     }
@@ -238,7 +243,8 @@ function AantalAssets()
   }
   catch(err) 
   {
-    alert(err.message);
+    alert("aantal assets: " + err.message);
+    Setup();
   }
 }
 function CheckInternet()
@@ -336,12 +342,13 @@ function infoOphalen()
   }
   catch(err)
   {
-    alert(err);
+    alert("aantal assets error: " + err);
   }
   
   var aantalAssets = 0;
   var geladenAssets = 0;
   var progress = 0;
+  app.dialog.close();
   var dialog = app.dialog.progress('Loading assets', progress);
   var assetsInterval = setInterval(function()
   {
@@ -534,10 +541,6 @@ function Kaart(routePoints)
 {
   var mapLoad = "";
   var routeCoordinaten = routePoints;
-  if(localStorage.getItem("MapNLInitialised") == null)
-  {
-    localStorage.setItem("MapNLInitialised","false");
-  }
   if(localStorage.getItem("MapNLInitialised") == "false")
   {
     //mymap.remove();
@@ -567,7 +570,7 @@ function Kaart(routePoints)
           maxZoom: 16,
           minZoom: 12,
           tileSize: 512,
-          zoomOffset: 1,
+          zoomOffset: -1,
         }).addTo(mymap);
         //mymap.on('load', () => console.log(map.getCanvas().toDataURL()));
         
@@ -1120,16 +1123,8 @@ function readURL(input)
 }
 function ScriptAndUpdateCheck()
 {
-  console.log("infoophaleninterval");
-  /*-----------------------check als gebruiker internet heeft of niet--------------------*/
-  //CheckInternet();
-  /*
-  var internetInverval = setInterval(function() 
-  {
-    CheckInternet()
-  }, 5000);
-  */
-/*------------------------------------------------------------------*/
+  //alert("in de appversion functie");
+  InizializeFirebase();
 
   if(localStorage.getItem("firebaseScriptsLoaded") == "true")
   {
@@ -1147,42 +1142,63 @@ function ScriptAndUpdateCheck()
     {
       infoOphalen();
     }
-    else if(internetStatus == "Online" && localStorage.getItem("EersteKeerGeladen") == "true")
+    /*else if(localStorage.getItem("AppVersion") == null)
     {
-      InizializeFirebase(); //dit geeft een eror bij de try catch maar zonder dit werkt het niet dusja
-      //---------------------------CHECK VOOR UPDATES------------------------------
-      var refroutes = firebase.database().ref('flamelink/environments/production/content/version/en-US/appVersion');
-      firebase.database().ref(refroutes).once('value', function(snapshot)
+      try
       {
-        var data = snapshot.val();
-        alert("snapshot data = " + data);
-        if(localStorage.getItem("AppVersion") == null)
+        var refroutes = firebase.database().ref('flamelink/environments/production/content/version/en-US/appVersion');
+        firebase.database().ref(refroutes).once('value', function(snapshot)
         {
+          var data = snapshot.val();
           localStorage.setItem("AppVersion", data);
-        }
-        else
+          app.dialog.close();
+        });
+      }
+      catch(err)
+      {
+        alert("null appversion: " + err)
+      }
+     
+    }*/
+    else if(internetStatus == "Online" && localStorage.getItem("EersteKeerGeladen") == "true" && localStorage.getItem("AppVersion") != null)
+    {
+      //alert("in de appversion if");
+     try
+     {
+       //---------------------------CHECK VOOR UPDATES------------------------------
+        var refroutes = firebase.database().ref('flamelink/environments/production/content/version/en-US/appVersion');
+        firebase.database().ref(refroutes).once('value', function(snapshot)
         {
+          //alert("in de appversion firebase functie");
+          var data = snapshot.val();
+          //alert("snapshot data = " + data);
+          app.dialog.close();
           if(localStorage.getItem("AppVersion") != data)
           {
+            //alert("if voor locale versie te vergelijken met firebase versie");
             if (confirm('Update Beschikbaar')) 
             {
               localStorage.setItem("EersteKeerGeladen","false");
               localStorage.setItem("AppVersion", data);
               //CheckInternet();/*kan misschien verwijderd worden op deze plaats*/
               infoOphalen();
+              
             } 
             else 
             {
             }
-
           }
-        }
-        
-      });
+        });
       //----------------------------------------------------------------------------
+     }
+     catch(err)
+     {
+       alert("eerste keer geladen true && appversion != null: " + err);
+       location.reload();
+     }
+      
 
-
-
+     /* ------------------------DISTANCE BEREKENEN----------------------------
       var coordinatesToCalculate = JSON.parse(localStorage.getItem("KoningklijkeWandelingRoutePoints"));
       var punt1;
       var punt2;
@@ -1214,17 +1230,22 @@ function ScriptAndUpdateCheck()
           //console.log("distance in meter: " + d); // returns the distance in meter
         }
       }
+      */
       //console.log("totale distance: " + puntdistance);
     }
     else if(internetStatus == "Offline" && localStorage.getItem("EersteKeerGeladen") == "true")
     {
-
+      app.dialog.close();
     }
   }
   else
   {
     location.reload();
   }
+ 
+}
+try
+{
   if (navigator.geolocation) 
   {
     navigator.geolocation.getCurrentPosition((position)=>
@@ -1235,4 +1256,8 @@ function ScriptAndUpdateCheck()
     console.log(long);
     });
   }
+}
+catch(err)
+{
+  alert("geolocation error: " + err);
 }
