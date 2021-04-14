@@ -39,12 +39,11 @@ catch(err)
 
 
 /*firebase initialisation*/
-var firebaseConfig;
+var firebaseConfig, database, storage, mymap, polylineCoords, lat, long, polyline;
+var polylineLines = [];
+var polylineNames = [];
 // Initialize Firebase
-var database, storage;
-//localStorage.setItem("EersteKeerGeladen","false");
-
-var mymap;
+//localStorage.setItem("EersteKeerGeladen","false"); 
 /*
 function addScripts()
 {
@@ -68,6 +67,7 @@ Setup();
 function Setup()
 {
   localStorage.setItem("MapNLInitialised","false");
+  localStorage.removeItem("polyline");
   if(localStorage.getItem("reloaded") == null)
   {
     localStorage.setItem("reloaded","false");
@@ -244,7 +244,7 @@ function AantalAssets()
   catch(err) 
   {
     alert("aantal assets: " + err.message);
-    Setup();
+    location.reload();
   }
 }
 function CheckInternet()
@@ -479,8 +479,10 @@ function infoOphalen()
                     }
                     try
                     {
+                      var uniqueName = value.uniqueName;
+                      uniqueName = uniqueName.replace(/\s/g, "");
                       dialog.setText("Asset " + geladenAssets + " of " + aantalAssets+ " loaded");
-                      localStorage.setItem(value.uniqueName + "RoutePoints",JSON.stringify(obj,null,2));
+                      localStorage.setItem(uniqueName + "RoutePoints",JSON.stringify(obj,null,2));
                     }
                     catch(err)
                     {
@@ -523,11 +525,35 @@ function infoOphalen()
     {
       if(localStorage.getItem("progress") >99)
       {
-        //alert("progress is voltooid");
-        clearInterval(progressinterval);
-        dialog.close();
-        localStorage.setItem("EersteKeerGeladen","true");
-        //alert("eerstekeergelanden = TRUE");
+
+        try
+        {
+          //---------------------------CHECK VOOR UPDATES------------------------------
+           var refroutes = firebase.database().ref('flamelink/environments/production/content/version/en-US/appVersion');
+           firebase.database().ref(refroutes).once('value', function(snapshot)
+           {
+             //alert("in de appversion firebase functie");
+             var data = snapshot.val();
+             //alert("snapshot data = " + data);
+             app.dialog.close();
+             localStorage.setItem("AppVersion", data); 
+             //alert("progress is voltooid");
+             clearInterval(progressinterval);
+             dialog.close();
+             localStorage.setItem("EersteKeerGeladen","true");
+             //alert("eerstekeergelanden = TRUE");
+           });
+         //----------------------------------------------------------------------------
+        }
+        catch(err)
+        {
+          alert("eerste keer geladen true && appversion != null: " + err);
+          location.reload();
+        }
+
+
+
+       
       }
     },200);
   }, 100);
@@ -558,17 +584,17 @@ function Kaart(routePoints)
         /*leaflet code*/
         mymap = L.map('mapid',
         {
-          maxBounds: [
+          /*maxBounds: [
               //south west
               [50.680033, 4.313562],
               //north east
               [50.877788, 4.605838]
-            ] 
+            ] */
           }).setView([50.791487, 4.448756], 13);
         L.tileLayer(mapLoad, {
         //L.tileLayer('https://api.mapbox.com/styles/v1/groenestapstenenvzw/cjsa2ljft5tgs1ftdjcqr09mo/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZ3JvZW5lc3RhcHN0ZW5lbnZ6dyIsImEiOiJjanMwNzNiN2MwMDhmNGFrdm9pZTlidzhzIn0.9eaZs-fbZSyygtfnyqUEIQ', {
           maxZoom: 16,
-          minZoom: 12,
+          minZoom: 11,
           tileSize: 512,
           zoomOffset: -1,
         }).addTo(mymap);
@@ -614,6 +640,7 @@ function Kaart(routePoints)
         /*new L.G)PX(gpx, {async: true}).on('loaded', function(e) {
           mymap.fitBounds(e.target.getBounds());
         }).addTo(mymap); */
+
         var RuusbroeckLine =  L.polyline([[coords]],{color: 'red'});
         layerGroup.addLayer(RuusbroeckLine);
         /*om naar deze specifieke lijn op de map te gaan*/
@@ -686,7 +713,7 @@ function Kaart(routePoints)
     }
     else
     {
-      var polyline;
+      
       if(localStorage.getItem("RouteDrawn") == "true")
       {
         polyline = L.polyline(JSON.parse(localStorage.getItem("polyline"))).addTo(mymap); 
@@ -915,10 +942,12 @@ function poortChange(id)
   var aantalRoutes = 0;
   for(var i = 0; i < savedRoutesContent.length;i++)
   {
+    var savedRoutesContentUniqueName = savedRoutesContent[i].uniqueName;
+    console.log("uniquename = " + savedRoutesContent[i].uniqueName);
     var content = document.createElement("div");
     var duurRoute = BerekenTijd(savedRoutesContent[i].distance, typeRoute);//-> hier een functie voor maken 
     content.innerHTML = `
-    <div style=" height: 8%; width="width:100%" id=`+savedRoutesContent[i].uniqueName+` onclick="GekozenRoute(this.id)" class ="routeChoice">
+    <div style=" height: 8%; width:100%" id=` + savedRoutesContentUniqueName +` onclick="GekozenRoute(this.id)" class ="routeChoice">
     <div class="vl">
     <div class="routechoicetext">
         <p>` + savedRoutesContent[i].uniqueName + `<br>
@@ -966,12 +995,12 @@ function poortChange(id)
     }
   }
   console.log("aantal routes: " + aantalRoutes );
-        if(aantalRoutes == 0)
-        {
-          var empty = document.createElement('p');
-          empty.innerHTML = "Geen routes voor deze combinatie";
-          tabRoute.appendChild(empty);
-        }
+  if(aantalRoutes == 0)
+  {
+    var empty = document.createElement('p');
+    empty.innerHTML = "Geen routes voor deze combinatie";
+    tabRoute.appendChild(empty);
+  }
 
 }
 function GekozenRoute(name)
@@ -980,9 +1009,12 @@ function GekozenRoute(name)
   var gekozenRouteName = name;
   var localstorageRoutePoints = gekozenRouteName + "RoutePoints";
   var coords = JSON.parse(localStorage.getItem(localstorageRoutePoints));
+  console.log(localstorageRoutePoints);
+  //console.log(coords[0]);
+  //console.log(coords[1]);
   if(localStorage.getItem("polyline") !=null)
   {
-    polyline = L.polyline(JSON.parse(localStorage.getItem("polyline"))).addTo(mymap); 
+    //polyline = L.polyline(JSON.parse(localStorage.getItem("polyline"))).addTo(mymap); 
     for(i in mymap._layers) 
     {
       if(mymap._layers[i]._path != undefined) 
@@ -999,15 +1031,32 @@ function GekozenRoute(name)
     }
     console.log("polyline removed");
   }
-        polyline = L.polyline(coords).addTo(mymap); 
-        localStorage.setItem("polyline",JSON.stringify(coords));
+  for(var i = 0; i < coords.length; i++)
+  {
+    if(i>0)
+    {
+      window['polyline' + i] = [[coords[i-1].lat, coords[i-1].lng],[coords[i].lat, coords[i].lng]];
+      //console.log(window['polyline' + i]);
+      polylineLines.push([[coords[i-1].lat, coords[i-1].lng],[coords[i].lat, coords[i].lng]]);
+      //polylineLines.push(window['polyline' + i]);
+      window['polyline' + i] = L.polyline( window['polyline' + i]).addTo(mymap); 
+      window['polyline' + i].setStyle(
+      {
+        color: 'orange'
+      });
+    }
+    
+    //console.log(coords[i]);
+    
+  }
+  localStorage.setItem("polyline",JSON.stringify(coords));
+  polylineCoords = coords;
+  //console.log(polylineCoords);
   //Kaart(coords);
-
 }
-var coords = [["50.76752","4.43747"],["50.76752","4.43746"],["50.7675","4.43734"],["50.7675","4.43724"],["50.76751","4.43711"],["50.76765","4.43607"],["50.76781","4.43516"],["50.76784","4.435"],["50.76784","4.43488"],["50.76782","4.43477"],["50.76768","4.43427"],["50.76752","4.43377"],["50.76746","4.43356"],["50.7674","4.4334"],["50.76729","4.43298"],["50.76719","4.43263"],["50.76713","4.43239"],["50.76675","4.43078"],["50.76671","4.4306"],["50.76669","4.43057"],["50.76667","4.43055"],["50.76663","4.43055"],["50.76648","4.43063"],["50.76589","4.431"],["50.76571","4.43124"],["50.76556","4.43151"],["50.76549","4.43161"],["50.76545","4.43178"],["50.76539","4.4319"],["50.76525","4.43206"],["50.7651","4.43208"],["50.76504","4.43209"],["50.76498","4.43213"],["50.76483","4.43221"],["50.76472","4.43208"],["50.76458","4.43195"],["50.76428","4.43185"],["50.76417","4.43184"],["50.76405","4.43183"],["50.76383","4.4318"],["50.76367","4.43182"],["50.76354","4.43183"],["50.76286","4.43194"],["50.7618","4.43217"],["50.76092","4.43233"],["50.76054","4.4324"],["50.76025","4.43246"],["50.75948","4.43262"],["50.75945","4.43254"],["50.75937","4.43233"],["50.75931","4.43218"],["50.75925","4.43203"],["50.7592","4.43191"],["50.75915","4.43176"],["50.75907","4.43157"],["50.75884","4.43097"],["50.75875","4.43072"],["50.7585","4.43008"],["50.7583","4.42957"],["50.75782","4.42832"],["50.7575","4.42749"],["50.75681","4.42569"],["50.75663","4.42568"],["50.75641","4.42566"],["50.75619","4.42564"],["50.75605","4.42563"],["50.75581","4.42562"],["50.75566","4.42561"],["50.75555","4.4256"],["50.75539","4.42559"],["50.75527","4.42558"],["50.75517","4.42557"],["50.75504","4.42556"],["50.75484","4.42555"],["50.75473","4.42555"],["50.75468","4.42554"],["50.75457","4.42554"],["50.75447","4.42553"],["50.7544","4.42553"],["50.75429","4.42552"],["50.75286","4.4254"],["50.75298","4.42501"],["50.75362","4.42299"],["50.75388","4.42217"],["50.75392","4.42205"],["50.75403","4.4217"],["50.75411","4.42159"],["50.75432","4.42149"],["50.75445","4.42147"],["50.75453","4.42146"],["50.75461","4.42145"],["50.75493","4.42132"],["50.7552","4.4212"],["50.75542","4.4211"],["50.75568","4.42099"],["50.75603","4.42086"],["50.75625","4.42087"],["50.7567","4.42098"],["50.757","4.4209"],["50.75764","4.4206"],["50.75769","4.42056"],["50.75807","4.42022"],["50.7584","4.41978"],["50.75858","4.41976"],["50.75941","4.42013"],["50.75981","4.42039"],["50.75995","4.42051"],["50.76006","4.42069"],["50.76061","4.42183"],["50.76084","4.42223"],["50.76122","4.42261"],["50.76133","4.42273"],["50.76146","4.42295"],["50.76154","4.42314"],["50.76165","4.42334"],["50.76186","4.42361"],["50.76192","4.42368"],["50.76206","4.42388"],["50.76223","4.42413"],["50.7624","4.42438"],["50.76251","4.42454"],["50.76264","4.42468"],["50.76281","4.42483"],["50.76292","4.42495"],["50.76312","4.42519"],["50.7633","4.42548"],["50.76346","4.42579"],["50.76363","4.42603"],["50.76368","4.42611"],["50.76373","4.42617"],["50.76376","4.42623"],["50.76381","4.42642"],["50.76383","4.42661"],["50.76384","4.42682"],["50.76387","4.42698"],["50.76392","4.42711"],["50.764","4.4274"],["50.76411","4.42762"],["50.76416","4.42774"],["50.76418","4.42789"],["50.76421","4.42824"],["50.76429","4.42859"],["50.76431","4.42873"],["50.76435","4.42894"],["50.76441","4.42923"],["50.76446","4.4295"],["50.76449","4.42978"],["50.76451","4.43024"],["50.76454","4.43057"],["50.76459","4.43086"],["50.76468","4.43144"],["50.76483","4.43221"],["50.76487","4.43236"],["50.76488","4.43257"],["50.76492","4.43296"],["50.76501","4.4337"],["50.76524","4.43494"],["50.76542","4.43575"],["50.76554","4.43612"],["50.76564","4.43636"],["50.7658","4.43673"],["50.76616","4.43764"],["50.76595","4.43632"],["50.76606","4.43651"],["50.76636","4.43745"],["50.76693","4.43901"],["50.76707","4.4394"],["50.76709","4.43953"],["50.76712","4.43969"],["50.76716","4.44028"],["50.76721","4.44088"],["50.76731","4.44202"],["50.76733","4.44216"],["50.76738","4.44227"],["50.76745","4.44237"],["50.76759","4.44246"],["50.76771","4.44253"],["50.76795","4.44268"],["50.76805","4.44274"],["50.76814","4.44271"],["50.76821","4.44262"],["50.76826","4.44242"],["50.76831","4.44213"],["50.76836","4.44195"],["50.76838","4.44191"],["50.76842","4.4419"],["50.76844","4.44202"],["50.76847","4.44225"],["50.76848","4.44234"],["50.76849","4.44244"],["50.76849","4.44255"],["50.76853","4.44255"],["50.76859","4.44255"],["50.76864","4.44254"],["50.76868","4.44251"],["50.76873","4.44246"],["50.76888","4.44227"],["50.76882","4.44186"],["50.76881","4.44176"],["50.76873","4.44118"],["50.76871","4.44111"],["50.76868","4.44106"],["50.76862","4.44103"],["50.76848","4.44106"],["50.76845","4.44101"],["50.76835","4.44047"],["50.76832","4.44038"],["50.76808","4.4395"],["50.76805","4.4394"],["50.76801","4.43929"],["50.76798","4.43911"],["50.76795","4.43899"],["50.76791","4.43877"],["50.76786","4.43854"],["50.76782","4.43849"],["50.7678","4.43844"],["50.76755","4.43759"]];
+//var coords = [["50.76752","4.43747"],["50.76752","4.43746"],["50.7675","4.43734"],["50.7675","4.43724"],["50.76751","4.43711"],["50.76765","4.43607"],["50.76781","4.43516"],["50.76784","4.435"],["50.76784","4.43488"],["50.76782","4.43477"],["50.76768","4.43427"],["50.76752","4.43377"],["50.76746","4.43356"],["50.7674","4.4334"],["50.76729","4.43298"],["50.76719","4.43263"],["50.76713","4.43239"],["50.76675","4.43078"],["50.76671","4.4306"],["50.76669","4.43057"],["50.76667","4.43055"],["50.76663","4.43055"],["50.76648","4.43063"],["50.76589","4.431"],["50.76571","4.43124"],["50.76556","4.43151"],["50.76549","4.43161"],["50.76545","4.43178"],["50.76539","4.4319"],["50.76525","4.43206"],["50.7651","4.43208"],["50.76504","4.43209"],["50.76498","4.43213"],["50.76483","4.43221"],["50.76472","4.43208"],["50.76458","4.43195"],["50.76428","4.43185"],["50.76417","4.43184"],["50.76405","4.43183"],["50.76383","4.4318"],["50.76367","4.43182"],["50.76354","4.43183"],["50.76286","4.43194"],["50.7618","4.43217"],["50.76092","4.43233"],["50.76054","4.4324"],["50.76025","4.43246"],["50.75948","4.43262"],["50.75945","4.43254"],["50.75937","4.43233"],["50.75931","4.43218"],["50.75925","4.43203"],["50.7592","4.43191"],["50.75915","4.43176"],["50.75907","4.43157"],["50.75884","4.43097"],["50.75875","4.43072"],["50.7585","4.43008"],["50.7583","4.42957"],["50.75782","4.42832"],["50.7575","4.42749"],["50.75681","4.42569"],["50.75663","4.42568"],["50.75641","4.42566"],["50.75619","4.42564"],["50.75605","4.42563"],["50.75581","4.42562"],["50.75566","4.42561"],["50.75555","4.4256"],["50.75539","4.42559"],["50.75527","4.42558"],["50.75517","4.42557"],["50.75504","4.42556"],["50.75484","4.42555"],["50.75473","4.42555"],["50.75468","4.42554"],["50.75457","4.42554"],["50.75447","4.42553"],["50.7544","4.42553"],["50.75429","4.42552"],["50.75286","4.4254"],["50.75298","4.42501"],["50.75362","4.42299"],["50.75388","4.42217"],["50.75392","4.42205"],["50.75403","4.4217"],["50.75411","4.42159"],["50.75432","4.42149"],["50.75445","4.42147"],["50.75453","4.42146"],["50.75461","4.42145"],["50.75493","4.42132"],["50.7552","4.4212"],["50.75542","4.4211"],["50.75568","4.42099"],["50.75603","4.42086"],["50.75625","4.42087"],["50.7567","4.42098"],["50.757","4.4209"],["50.75764","4.4206"],["50.75769","4.42056"],["50.75807","4.42022"],["50.7584","4.41978"],["50.75858","4.41976"],["50.75941","4.42013"],["50.75981","4.42039"],["50.75995","4.42051"],["50.76006","4.42069"],["50.76061","4.42183"],["50.76084","4.42223"],["50.76122","4.42261"],["50.76133","4.42273"],["50.76146","4.42295"],["50.76154","4.42314"],["50.76165","4.42334"],["50.76186","4.42361"],["50.76192","4.42368"],["50.76206","4.42388"],["50.76223","4.42413"],["50.7624","4.42438"],["50.76251","4.42454"],["50.76264","4.42468"],["50.76281","4.42483"],["50.76292","4.42495"],["50.76312","4.42519"],["50.7633","4.42548"],["50.76346","4.42579"],["50.76363","4.42603"],["50.76368","4.42611"],["50.76373","4.42617"],["50.76376","4.42623"],["50.76381","4.42642"],["50.76383","4.42661"],["50.76384","4.42682"],["50.76387","4.42698"],["50.76392","4.42711"],["50.764","4.4274"],["50.76411","4.42762"],["50.76416","4.42774"],["50.76418","4.42789"],["50.76421","4.42824"],["50.76429","4.42859"],["50.76431","4.42873"],["50.76435","4.42894"],["50.76441","4.42923"],["50.76446","4.4295"],["50.76449","4.42978"],["50.76451","4.43024"],["50.76454","4.43057"],["50.76459","4.43086"],["50.76468","4.43144"],["50.76483","4.43221"],["50.76487","4.43236"],["50.76488","4.43257"],["50.76492","4.43296"],["50.76501","4.4337"],["50.76524","4.43494"],["50.76542","4.43575"],["50.76554","4.43612"],["50.76564","4.43636"],["50.7658","4.43673"],["50.76616","4.43764"],["50.76595","4.43632"],["50.76606","4.43651"],["50.76636","4.43745"],["50.76693","4.43901"],["50.76707","4.4394"],["50.76709","4.43953"],["50.76712","4.43969"],["50.76716","4.44028"],["50.76721","4.44088"],["50.76731","4.44202"],["50.76733","4.44216"],["50.76738","4.44227"],["50.76745","4.44237"],["50.76759","4.44246"],["50.76771","4.44253"],["50.76795","4.44268"],["50.76805","4.44274"],["50.76814","4.44271"],["50.76821","4.44262"],["50.76826","4.44242"],["50.76831","4.44213"],["50.76836","4.44195"],["50.76838","4.44191"],["50.76842","4.4419"],["50.76844","4.44202"],["50.76847","4.44225"],["50.76848","4.44234"],["50.76849","4.44244"],["50.76849","4.44255"],["50.76853","4.44255"],["50.76859","4.44255"],["50.76864","4.44254"],["50.76868","4.44251"],["50.76873","4.44246"],["50.76888","4.44227"],["50.76882","4.44186"],["50.76881","4.44176"],["50.76873","4.44118"],["50.76871","4.44111"],["50.76868","4.44106"],["50.76862","4.44103"],["50.76848","4.44106"],["50.76845","4.44101"],["50.76835","4.44047"],["50.76832","4.44038"],["50.76808","4.4395"],["50.76805","4.4394"],["50.76801","4.43929"],["50.76798","4.43911"],["50.76795","4.43899"],["50.76791","4.43877"],["50.76786","4.43854"],["50.76782","4.43849"],["50.7678","4.43844"],["50.76755","4.43759"]];
 $(document).on('page:init', function (e, page) 
 {
-  
   var gates = [];
   gates = JSON.parse(localStorage.getItem("Gates"));
    //console.log("interval stopt");
@@ -1045,19 +1094,24 @@ $(document).on('page:init', function (e, page)
         //console.log(gateId);
         var tabRoute = document.getElementById("tab-route");
         tabRoute.innerHTML = "";
-        var content = document.createElement("div");
+        
         
         var aantalRoutes = 0;
         for(var i = 0; i < savedRoutesContent.length;i++)
         {
+          var content = document.createElement("div");
+          //console.log("routeGateType: " + savedRoutesContent[i].gateType);
+          //console.log("routeType: " + savedRoutesContent[i].type);
           var duurRoute = BerekenTijd(savedRoutesContent[i].distance, typeRoute);//-> hier een functie voor maken
           if(savedRoutesContent[i].gateType == 0 && savedRoutesContent[i].type == 0)
           {
+            var savedRoutesContentUniqueName = savedRoutesContent[i].uniqueName;
+            savedRoutesContentUniqueName = savedRoutesContentUniqueName.replace(/\s/g, "");
             //console.log(savedRoutesContent[i]);
             //console.log(savedRoutesContent[i]);
             content.innerHTML = 
             `
-            <div style=" height: 8%; width="width:100%" id=`+savedRoutesContent[i].uniqueName+` onclick="GekozenRoute(this.id)" class ="routeChoice">
+            <div style=" height: 8%; width:100%" id=`+savedRoutesContentUniqueName+` onclick="GekozenRoute(this.id)" class ="routeChoice">
               <div class="vl">
                 <div class="routechoicetext">
                     <p>` + savedRoutesContent[i].uniqueName + `<br>
@@ -1079,7 +1133,7 @@ $(document).on('page:init', function (e, page)
               </div>
             `;
             tabRoute.appendChild(content);
-            //console.log("bovenstaande data is toegevoegd");
+            console.log("bovenstaande data is toegevoegd");
             aantalRoutes ++;
           } 
           //console.log(duurRoute);
@@ -1125,7 +1179,7 @@ function ScriptAndUpdateCheck()
 {
   //alert("in de appversion functie");
   InizializeFirebase();
-
+  console.log("in scriptandupdate functie");
   if(localStorage.getItem("firebaseScriptsLoaded") == "true")
   {
     var internetStatus;
@@ -1136,11 +1190,13 @@ function ScriptAndUpdateCheck()
     if(internetStatus == "Online" && localStorage.getItem("EersteKeerGeladen") == null && localStorage.getItem("reloaded") == "false")
     {
       localStorage.setItem("reloaded", "true");
+      console.log("in reloaded if");
       location.reload();
     }
     else if(internetStatus == "Online" && localStorage.getItem("EersteKeerGeladen") == null && localStorage.getItem("reloaded") == "true")
     {
       infoOphalen();
+      console.log("in infoophalen if");
     }
     /*else if(localStorage.getItem("AppVersion") == null)
     {
@@ -1186,6 +1242,7 @@ function ScriptAndUpdateCheck()
             } 
             else 
             {
+              app.dialog.close();
             }
           }
         });
@@ -1227,7 +1284,7 @@ function ScriptAndUpdateCheck()
           var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
           var d = R * c;
           puntdistance = puntdistance + d;
-          //console.log("distance in meter: " + d); // returns the distance in meter
+          console.log("distance in meter: " + d); // returns the distance in meter
         }
       }
       */
@@ -1244,20 +1301,135 @@ function ScriptAndUpdateCheck()
   }
  
 }
-try
+function locateUser()
 {
-  if (navigator.geolocation) 
-  {
-    navigator.geolocation.getCurrentPosition((position)=>
+  if(navigator.geolocation) 
     {
-    var lat  = position.coords.latitude;
-    const long = position.coords.longitude
-    console.log(lat);
-    console.log(long);
-    });
-  }
+      navigator.geolocation.getCurrentPosition((position)=>
+      {
+        lat  = position.coords.latitude;
+        long = position.coords.longitude;
+        //console.log(lat);
+        //console.log(long);
+      });
+    } 
 }
-catch(err)
+var coordinateLocationInArray = 0;
+var polylineInterval = setInterval(function()
 {
-  alert("geolocation error: " + err);
+  //locateUser();
+  //console.log(polylineLines[0][0])
+  //console.log(polylineLines[coordinateLocationInArray]);
+  for(var i = 0; i <50; i++)
+  {
+    /*window["polyline "+ i].setStyle(
+      {
+        color: 'green'
+      });*/
+      //console.log(window["polyline" + i]);
+  }
+  for (var key in window) 
+  {
+    if(key.includes("polyline"))
+    {
+      //console.log("window variable-> " + key + ": " + window[key]);
+    }
+   
+  }
+},5000);
+var current_position, current_accuracy;
+
+function onLocationFound(e) 
+{
+  // if position defined, then remove the existing position marker and accuracy circle from the map
+  console.log("location found");
+  console.log(e);
+
+  if (current_position) 
+  {
+    mymap.removeLayer(current_position);
+  }
+  if(localStorage.getItem("MapNLInitialised") == "true")
+  {
+    const latlng = 
+    {
+      lat: e.coords.latitude,
+      lng: e.coords.longitude
+    };
+    lat = e.coords.latitude;
+    long = e.coords.longitude;
+    current_position = L.marker(latlng).addTo(mymap);
+  }
+  
+  //---------------------------------------------------------------------------------------
+  if(polylineLines != undefined)
+  {
+    if(polylineLines != "")
+    {
+      console.log("Coord1 lat = " + polylineLines[coordinateLocationInArray][0][0]);
+      console.log("Coord1 long = " + polylineLines[coordinateLocationInArray][0][1]);
+
+      console.log("Coord2 lat = " + polylineLines[coordinateLocationInArray][1][0]);
+      console.log("Coord2 long = " + polylineLines[coordinateLocationInArray][1][1]);
+      var line = [[polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]], [polylineLines[coordinateLocationInArray][1][0],polylineLines[coordinateLocationInArray][1][1]]];
+      
+      console.log(window["polyline" + (coordinateLocationInArray+1)]);
+      mymap.removeLayer(window["polyline" + (coordinateLocationInArray+1)]);
+      window['polyline' + (coordinateLocationInArray+1)] = [[polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]],[polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]]];
+
+      window['polyline' + (coordinateLocationInArray+1)] = L.polyline( window['polyline' + (coordinateLocationInArray+1)],{color: 'lightgreen'}).addTo(mymap); 
+      coordinateLocationInArray ++;
+      /*
+      window['polyline' + (coordinateLocationInArray+1)].setStyle(
+      {
+        color: 'green'
+      });
+      */
+
+
+
+      /*console.log("polylineLines = " + polylineLines[0][0]);
+      console.log("yes");
+      console.log("lat = " + lat);
+      console.log("long = " + long);
+      */
+      /*if(polylineLines[coordinateLocationInArray][1][0] == lat && polylineLines[coordinateLocationInArray][1][1] == long)
+      {
+        console.log("lng: " + polylineLines[coordinateLocationInArray][1][1] + "lat" + polylineLines[coordinateLocationInArray][1][0]);
+        console.log(coordinateLocationInArray);
+        
+
+      }
+      if(polylineCoords[coordinateLocationInArray].lng == long && polylineCoords[coordinateLocationInArray].lat == lat)
+      {
+        console.log("lng: " + polylineCoords[coordinateLocationInArray].lng + "lat" + polylineCoords[coordinateLocationInArray].lat);
+        console.log(coordinateLocationInArray);
+        coordinateLocationInArray ++;
+      }
+      else
+      {
+        console.log("volgende coordinaten niet bereikt dus blijft bij: " + coordinateLocationInArray);
+        //console.log("lng: " + polylineCoords[coordinateLocationInArray].lng + "lat" + polylineCoords[coordinateLocationInArray].lat);
+        //coordinateLocationInArray ++;
+      }*/
+    }
+    //kijken of de gebruiker op de bepaalde coordinaten is om de polyline achter hem groen te maken
+    
+  }
+  else
+  {
+    console.log("geen coordinates");
+  }
+  //--------------------------------------------------------------------------------------------------
+
 }
+
+
+function onLocationError(e) {
+  console.log("Location error: " + e);
+}
+
+navigator.geolocation.watchPosition(onLocationFound, onLocationError, {
+  maximumAge: 1000,
+  timeout: 2000
+});
