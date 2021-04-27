@@ -40,10 +40,34 @@
   </div>
   <div class="page-content">
     <div id="mapid" style="height: 90%; width: 100%" data-tap-disabled="true"></div>
-
-    <a href="#" class="button button-large button-fill popup-open" data-popup=".my-popup">
+    <a href="#" id="btnRoute" class="button button-large button-fill popup-open" data-popup=".my-popup">
       <span>Kies route</span>
     </a>
+    <div id="BeforeRoute" style="display: none;">
+      <a href="#" class="col button button-raised button-round " onclick="ReverseRoute()">
+        <span>Reverse</span>
+      </a>
+      <a href="#" class="col button button-raised button-round " onclick="StartRoute()">
+        <span>Start</span>
+      </a>
+    </div>
+    <div id="RouteInfo" style="display: none;">
+      <label id="RouteName"></label>
+      
+      <label id="StopRoute" onclick="StopRoute()">
+        <i class="icon f7-icons if-not-md"><img src=".\img/XIcon.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
+        <i class="icon material-icons md-only"><img src=".\img/XIcon.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
+      </label>
+      
+      <br>
+      <i class="icon f7-icons if-not-md"><img src=".\img/distance.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
+      <i class="icon material-icons md-only"><img src=".\img/distance.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
+      <label>Afgelegde afstand: <label id="RouteAfgelegdeAfstand"></label>/ <label id="RouteTotaleAfstand"></label></label>
+      <br>
+      <i class="icon f7-icons if-not-md"><img src=".\img/timerIcon.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
+      <i class="icon material-icons md-only"><img src=".\img/timerIcon.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
+      <label>Resterende tijd: <label id="RouteResterendeTijd"></label>min</label>
+    </div>
     <!-- Code voor de popup -->
     <div class="popup my-popup">
       <div class="view">
@@ -149,8 +173,8 @@
                   </div>
                 </div>
                 <div class="imagediv">
-                  <input type="file" accept="image/*" capture="camera" id="cameraInput">
-                  <img id="uploadimage" style="width: 50%; height: 50%;">
+                  <img id="uploadimage" src=".\img/stockAfbeelding.jpg" onclick="test()">
+                  <input type="file" accept="image/*" id="cameraInput" onchange="readURL(this);">
                 </div>
               </div>
               <div class="midden">

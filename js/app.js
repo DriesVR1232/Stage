@@ -1,5 +1,3 @@
-
-
 // Dom7
 var $ = Dom7;
 // Theme
@@ -30,6 +28,8 @@ try{
   });
   
   localStorage.setItem("Framework7Initialised", "true");
+  localStorage.setItem("Reverse","false");
+  localStorage.setItem("RouteStart","false");
 }
 catch(err)
 {
@@ -39,9 +39,12 @@ catch(err)
 
 
 /*firebase initialisation*/
-var firebaseConfig, database, storage, mymap, polylineCoords, lat, long, polyline;
+var firebaseConfig, database, storage, mymap, polylineCoords, lat, long, polyline, coords;
 var polylineLines = [];
 var polylineNames = [];
+var totaldistance = 0;
+var TotaleDuurRoute,ResterendeDuurRoute,GekozenRouteDistance, GekozenRouteType,DuurPerPolyline, greenIcon, StartMarker;
+var time = 0;
 // Initialize Firebase
 //localStorage.setItem("EersteKeerGeladen","false"); 
 /*
@@ -115,7 +118,7 @@ function getStatus()
         else if(internetStatus == "Online")
         {
           clearInterval(confirminterval);
-          console.log("oke laad scripts");
+          //console.log("oke laad scripts");
           loadScripts();
         }
         else if(internetStatus == "Offline" && (localStorage.getItem("EersteKeerGeladen") == "true"))
@@ -147,7 +150,7 @@ function loadScripts()
     var script1 = document.querySelector('script[src="https://www.gstatic.com/firebasejs/8.2.7/firebase-app.js"]');
     if(script1 != null)
     {
-      console.log("niet null");
+      //console.log("niet null");
       clearInterval(searchscriptInterval);
       try
       {
@@ -322,6 +325,7 @@ function InizializeFirebase()
     catch(err)
     {
       console.log("storage error" + err);
+      location.reload();
     }
   }
 }
@@ -396,7 +400,7 @@ function infoOphalen()
                 //console.log(childData);
                 progress = progress + berekenProgress;
                 localStorage.setItem("progress",progress);
-                console.log("gates progress:" + progress);
+                //console.log("gates progress:" + progress);
                 dialog.setProgress(localStorage.getItem("progress"));
                 geladenAssets = geladenAssets + 1;
                 localStorage.setItem("geladenAssets", geladenAssets);
@@ -438,7 +442,7 @@ function infoOphalen()
                 // console.log(key + " -> " + x[key]);
               }
               localstorageRouteNames.push(value.uniqueName)
-              localStorage.setItem(value.uniqueName, JSON.stringify(value));
+              //localStorage.setItem(value.uniqueName, JSON.stringify(value));
               //-----------------------Excel fetch----------------------------------------------
               var url = value.routePoints;
               try
@@ -456,7 +460,8 @@ function infoOphalen()
                   /* DO SOMETHING WITH workbook HERE */
                   var numberOfSheets = workbook.SheetNames.length;
                   for (var i = 0; i < numberOfSheets; i++) 
-                  {  
+                  {
+                    //console.log("ingeladen route: " + value.uniqueName);  
                     //alert("in de for voor laatste assets");
                     var Sheet = workbook.SheetNames[i];
                     var excelRows = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[Sheet]);
@@ -482,7 +487,10 @@ function infoOphalen()
                       var uniqueName = value.uniqueName;
                       uniqueName = uniqueName.replace(/\s/g, "");
                       dialog.setText("Asset " + geladenAssets + " of " + aantalAssets+ " loaded");
+                      value.distance = (RouteDistanceBerekenen(obj)/ 1000).toFixed(2);
+                      //console.log(obj);
                       localStorage.setItem(uniqueName + "RoutePoints",JSON.stringify(obj,null,2));
+                      localStorage.setItem(value.uniqueName, JSON.stringify(value));
                     }
                     catch(err)
                     {
@@ -499,6 +507,7 @@ function infoOphalen()
               {
                 alert("xml request error: " + err);
               }
+              
               //-------------------------------------------------------------------------------
             });
               localStorage.setItem("routeNames", JSON.stringify(localstorageRouteNames));
@@ -550,10 +559,6 @@ function infoOphalen()
           alert("eerste keer geladen true && appversion != null: " + err);
           location.reload();
         }
-
-
-
-       
       }
     },200);
   }, 100);
@@ -561,7 +566,6 @@ function infoOphalen()
   localStorage.setItem("MapNLInitialised","false");
   //---------------------------------------------------------------------------
 }
-
 
 function Kaart(routePoints)
 {
@@ -641,8 +645,13 @@ function Kaart(routePoints)
           mymap.fitBounds(e.target.getBounds());
         }).addTo(mymap); */
 
+
+
+        /*
         var RuusbroeckLine =  L.polyline([[coords]],{color: 'red'});
         layerGroup.addLayer(RuusbroeckLine);
+        */
+
         /*om naar deze specifieke lijn op de map te gaan*/
         //mymap.fitBounds(RuusbroeckLine.getBounds());
         var overlay = 
@@ -759,11 +768,11 @@ function routeDivVullen(id)
   var elementId = id;
   if(elementId == "0 wandel")
   {
-    document.getElementById(elementId).style.backgroundColor = "#088c34";
+    document.getElementById(elementId).style.backgroundColor = "#ffe43c";
   }
   else if(elementId == "1 fiets")
   {
-    document.getElementById(elementId).style.backgroundColor = "#ffe43c";
+    document.getElementById(elementId).style.backgroundColor = "#088c34";
   }
   else if(elementId == "2 paard")
   {
@@ -796,11 +805,13 @@ function routeDivVullen(id)
       var aantalRoutes = 0;
       for(var i = 0; i < savedRoutesContent.length;i++)
       {
+        var savedRoutesContentUniqueName = savedRoutesContent[i].uniqueName;
+        savedRoutesContentUniqueName = savedRoutesContentUniqueName.replace(/\s/g, "");
         var content = document.createElement("div");
         var duurRoute = BerekenTijd(savedRoutesContent[i].distance, typeRoute);//-> hier een functie voor maken 
         //console.log(duurRoute);
         content.innerHTML = `
-        <div style=" height: 8%; width="width:100%" id=`+savedRoutesContent[i].uniqueName+` onclick="GekozenRoute(this.id)" class ="routeChoice">
+        <div style=" height: 8%; width="width:100%" id=`+savedRoutesContentUniqueName+` onclick="GekozenRoute(this.id)" class ="routeChoice popup-close">
         <div class="vl">
         <div class="routechoicetext">
             <p>` + savedRoutesContent[i].uniqueName + `<br>
@@ -814,7 +825,9 @@ function routeDivVullen(id)
             <label>
                 <i class="icon f7-icons if-not-md"><img src="\img/timerIcon.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
                 <i class="icon material-icons md-only"><img src="\img/timerIcon.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
-                ` + duurRoute + `min
+                <label id= " ` + savedRoutesContentUniqueName +`Duur">
+                  ` + duurRoute + `min
+                </label>
             </label>
             <hr>
             </div>
@@ -830,11 +843,11 @@ function routeDivVullen(id)
             var vlElement = document.getElementsByClassName("vl");
             if(elementId == "0 wandel")
             {
-                vlElement[vlElement.length-1].style.borderLeft = " 6px solid green";
+                vlElement[vlElement.length-1].style.borderLeft = "6px solid #ffe43c";
             }
             else if(elementId == "1 fiets")
             {
-                vlElement[vlElement.length-1].style.borderLeft = " 6px solid #ffe43c";
+                vlElement[vlElement.length-1].style.borderLeft = "6px solid green";
             }
             else if(elementId == "2 paard")
             {
@@ -915,6 +928,7 @@ function BerekenTijd(distance, type)
 }
 function poortChange(id)
 {
+  console.log("poort veranderd");
   var savedRoutesContent = [];
   savedRoutesContent = RouteContent();
   
@@ -940,14 +954,16 @@ function poortChange(id)
   //console.log("route type: " + typeRoute);
   //console.log("GateID: " + gateID);
   var aantalRoutes = 0;
+  console.log("content.length : " + savedRoutesContent.length);
   for(var i = 0; i < savedRoutesContent.length;i++)
   {
     var savedRoutesContentUniqueName = savedRoutesContent[i].uniqueName;
-    console.log("uniquename = " + savedRoutesContent[i].uniqueName);
+    savedRoutesContentUniqueName = savedRoutesContentUniqueName.replace(/\s/g, "");
+    //console.log("uniquename = " + savedRoutesContent[i].uniqueName);
     var content = document.createElement("div");
     var duurRoute = BerekenTijd(savedRoutesContent[i].distance, typeRoute);//-> hier een functie voor maken 
     content.innerHTML = `
-    <div style=" height: 8%; width:100%" id=` + savedRoutesContentUniqueName +` onclick="GekozenRoute(this.id)" class ="routeChoice">
+    <div style=" height: 8%; width:100%" id=` + savedRoutesContentUniqueName +` onclick="GekozenRoute(this.id)" class ="routeChoice popup-close">
     <div class="vl">
     <div class="routechoicetext">
         <p>` + savedRoutesContent[i].uniqueName + `<br>
@@ -961,7 +977,10 @@ function poortChange(id)
         <label>
             <i class="icon f7-icons if-not-md"><img src="\img/timerIcon.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
             <i class="icon material-icons md-only"><img src="\img/timerIcon.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
-            ` + duurRoute + `min
+            <label id= " ` + savedRoutesContentUniqueName +`Duur">
+              ` + duurRoute + `min
+            </label>
+           
         </label>
         <hr>
       </div>
@@ -970,17 +989,19 @@ function poortChange(id)
     `;
     if(savedRoutesContent[i].gateType == gateID)
     {
+      console.log("gatetype == gateID");
       if(savedRoutesContent[i].type == typeRoute)
       {
+        console.log("type == typeroute");
         tabRoute.appendChild(content);
         var vlElement = document.getElementsByClassName("vl");
             if(typeRoute == 0)
             {
-                vlElement[vlElement.length-1].style.borderLeft = " 6px solid green";
+                vlElement[vlElement.length-1].style.borderLeft = " 6px solid #ffe43c";
             }
             else if(typeRoute == 1)
             {
-                vlElement[vlElement.length-1].style.borderLeft = " 6px solid #ffe43c";
+                vlElement[vlElement.length-1].style.borderLeft = " 6px solid #088c34";
             }
             else if(typeRoute == 2)
             {
@@ -1005,13 +1026,71 @@ function poortChange(id)
 }
 function GekozenRoute(name)
 {
+  document.getElementById("mapid").style.height = "85%";
+  document.getElementById("btnRoute").style.display = 'none';
+  document.getElementById("BeforeRoute").style.display = 'block';
   console.log("route geselecteerd");
   var gekozenRouteName = name;
   var localstorageRoutePoints = gekozenRouteName + "RoutePoints";
-  var coords = JSON.parse(localStorage.getItem(localstorageRoutePoints));
+  coords = JSON.parse(localStorage.getItem(localstorageRoutePoints));
   console.log(localstorageRoutePoints);
+
+  greenIcon = L.icon(
+  {
+    iconUrl: '\img/start-flag.png',
+    iconSize:     [30, 85], // size of the icon
+    iconAnchor:   [0, 85], // point of the icon which will correspond to marker's location
+  });
+  StartMarker = L.marker([coords[0].lat,coords[0].lng], {icon: greenIcon});
+  mymap.addLayer(StartMarker);
+
   //console.log(coords[0]);
   //console.log(coords[1]);
+  var x;
+  for (var i = 0; i < localStorage.length; i++)
+  {
+    //testLocalStorage[i] = localStorage.getItem(localStorage.key(i));
+    try
+    {
+      x = localStorage.getItem(localStorage.key(i));
+      x = JSON.parse(x);
+      //console.log(x.distance);
+      //x = JSON.stringify(x,null,2);
+      if(gekozenRouteName == x.uniqueName.replace(/\s/g, ""))
+      {
+        console.log("gevonden!");
+        GekozenRouteDistance = x.distance;
+        GekozenRouteType = x.type;
+        console.log("GekozenRouteType = " + GekozenRouteType);
+        console.log("GekozenRouteDistance = " + GekozenRouteDistance);
+        TotaleDuurRoute = BerekenTijd(GekozenRouteDistance, GekozenRouteType);
+
+        var duurPerPolylineInterval = setInterval(function()
+        {
+          if(polylineLines != undefined)
+          {
+            if(polylineLines != "")
+            {
+              DuurPerPolyline = TotaleDuurRoute /polylineLines.length;
+              clearInterval(duurPerPolylineInterval);
+            }
+          }
+        },200)
+        
+      }
+      
+    }
+    catch(err)
+    {
+      console.log("error: " + err);
+    }
+    
+  }
+  /*
+  var x = JSON.parse(localStorage.getItem(localStorage.key(4)));
+  x = JSON.stringify(x,null,2);
+  console.log("GekozenName = " + x);
+*/  
   if(localStorage.getItem("polyline") !=null)
   {
     //polyline = L.polyline(JSON.parse(localStorage.getItem("polyline"))).addTo(mymap); 
@@ -1043,12 +1122,16 @@ function GekozenRoute(name)
       window['polyline' + i].setStyle(
       {
         color: 'orange'
-      });
+      }); 
     }
     
     //console.log(coords[i]);
     
   }
+  window['polyline' + (0)] = [[polylineLines[0][0][0], polylineLines[0][0][1]],[polylineLines[0][1][0], polylineLines[0][1][1]]];
+  window['polyline' + (0)] = L.polyline( window['polyline' + (0)],{color: 'yellow'}).addTo(mymap);
+  window['polyline' + (1)] = [[polylineLines[0][0][0], polylineLines[0][0][1]],[polylineLines[0][1][0], polylineLines[0][1][1]]];
+  window['polyline' + (1)] = L.polyline( window['polyline' + (1)],{color: 'yellow'}).addTo(mymap);
   localStorage.setItem("polyline",JSON.stringify(coords));
   polylineCoords = coords;
   //console.log(polylineCoords);
@@ -1087,7 +1170,7 @@ $(document).on('page:init', function (e, page)
       {
         
         clearInterval(dropDownElementInterval);
-        document.getElementById("0 wandel").style.backgroundColor = "#088c34";
+        document.getElementById("0 wandel").style.backgroundColor = "#ffe43c";
         var geselecteerdeGate= 0;
         var gateNaam = e.options[e.selectedIndex].value;
         var typeRoute = 0;
@@ -1111,9 +1194,9 @@ $(document).on('page:init', function (e, page)
             //console.log(savedRoutesContent[i]);
             content.innerHTML = 
             `
-            <div style=" height: 8%; width:100%" id=`+savedRoutesContentUniqueName+` onclick="GekozenRoute(this.id)" class ="routeChoice">
+            <div style=" height: 8%; width:100%" id=`+savedRoutesContentUniqueName+` onclick="GekozenRoute(this.id)" class ="routeChoice popup-close">
               <div class="vl">
-                <div class="routechoicetext">
+                <div class="routechoicetext " >
                     <p>` + savedRoutesContent[i].uniqueName + `<br>
                     ` + gateNaam + `  
                     </p>
@@ -1125,7 +1208,9 @@ $(document).on('page:init', function (e, page)
                     <label>
                         <i class="icon f7-icons if-not-md"><img src="\img/timerIcon.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
                         <i class="icon material-icons md-only"><img src="\img/timerIcon.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
-                        ` + duurRoute + `min
+                        <label id= " ` + savedRoutesContentUniqueName +`Duur">
+                          ` + duurRoute + `min
+                        </label>
                     </label>
                     <hr>
                   </div>
@@ -1179,11 +1264,11 @@ function ScriptAndUpdateCheck()
 {
   //alert("in de appversion functie");
   InizializeFirebase();
-  console.log("in scriptandupdate functie");
+  //console.log("in scriptandupdate functie");
   if(localStorage.getItem("firebaseScriptsLoaded") == "true")
   {
     var internetStatus;
-    console.log("begininterval");
+    //console.log("begininterval");
     internetStatus = localStorage.getItem("InternetStatus");
     //alert("internetstatus:" + internetStatus);
     //alert("eerstekeergeladen:" + localStorage.getItem("EersteKeerGeladen"));
@@ -1342,93 +1427,309 @@ var current_position, current_accuracy;
 function onLocationFound(e) 
 {
   // if position defined, then remove the existing position marker and accuracy circle from the map
-  console.log("location found");
-  console.log(e);
+  //console.log("location found");
 
-  if (current_position) 
+  if(localStorage.getItem("RouteStart") == "true")
   {
-    mymap.removeLayer(current_position);
-  }
-  if(localStorage.getItem("MapNLInitialised") == "true")
-  {
-    const latlng = 
+    if (current_position) 
     {
-      lat: e.coords.latitude,
-      lng: e.coords.longitude
-    };
-    lat = e.coords.latitude;
-    long = e.coords.longitude;
-    current_position = L.marker(latlng).addTo(mymap);
-  }
-  
-  //---------------------------------------------------------------------------------------
-  if(polylineLines != undefined)
-  {
-    if(polylineLines != "")
-    {
-      console.log("Coord1 lat = " + polylineLines[coordinateLocationInArray][0][0]);
-      console.log("Coord1 long = " + polylineLines[coordinateLocationInArray][0][1]);
-
-      console.log("Coord2 lat = " + polylineLines[coordinateLocationInArray][1][0]);
-      console.log("Coord2 long = " + polylineLines[coordinateLocationInArray][1][1]);
-      var line = [[polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]], [polylineLines[coordinateLocationInArray][1][0],polylineLines[coordinateLocationInArray][1][1]]];
-      
-      console.log(window["polyline" + (coordinateLocationInArray+1)]);
-      mymap.removeLayer(window["polyline" + (coordinateLocationInArray+1)]);
-      window['polyline' + (coordinateLocationInArray+1)] = [[polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]],[polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]]];
-
-      window['polyline' + (coordinateLocationInArray+1)] = L.polyline( window['polyline' + (coordinateLocationInArray+1)],{color: 'lightgreen'}).addTo(mymap); 
-      coordinateLocationInArray ++;
-      /*
-      window['polyline' + (coordinateLocationInArray+1)].setStyle(
-      {
-        color: 'green'
-      });
-      */
-
-
-
-      /*console.log("polylineLines = " + polylineLines[0][0]);
-      console.log("yes");
-      console.log("lat = " + lat);
-      console.log("long = " + long);
-      */
-      /*if(polylineLines[coordinateLocationInArray][1][0] == lat && polylineLines[coordinateLocationInArray][1][1] == long)
-      {
-        console.log("lng: " + polylineLines[coordinateLocationInArray][1][1] + "lat" + polylineLines[coordinateLocationInArray][1][0]);
-        console.log(coordinateLocationInArray);
-        
-
-      }
-      if(polylineCoords[coordinateLocationInArray].lng == long && polylineCoords[coordinateLocationInArray].lat == lat)
-      {
-        console.log("lng: " + polylineCoords[coordinateLocationInArray].lng + "lat" + polylineCoords[coordinateLocationInArray].lat);
-        console.log(coordinateLocationInArray);
-        coordinateLocationInArray ++;
-      }
-      else
-      {
-        console.log("volgende coordinaten niet bereikt dus blijft bij: " + coordinateLocationInArray);
-        //console.log("lng: " + polylineCoords[coordinateLocationInArray].lng + "lat" + polylineCoords[coordinateLocationInArray].lat);
-        //coordinateLocationInArray ++;
-      }*/
+      mymap.removeLayer(current_position);
     }
-    //kijken of de gebruiker op de bepaalde coordinaten is om de polyline achter hem groen te maken
+    if(localStorage.getItem("MapNLInitialised") == "true")
+    {
+      const latlng = 
+      {
+        lat: e.coords.latitude,
+        lng: e.coords.longitude
+      };
+      lat = e.coords.latitude;
+      long = e.coords.longitude;
+      current_position = L.marker(latlng).addTo(mymap);
+    }
+    
+    //---------------------------------------------------------------------------------------
+    if(polylineLines != undefined)
+    {
+      if(polylineLines != "")
+      {
+        /*
+        console.log("Coord1 lat = " + polylineLines[coordinateLocationInArray][0][0]);
+        console.log("Coord1 long = " + polylineLines[coordinateLocationInArray][0][1]);
+
+        console.log("Coord2 lat = " + polylineLines[coordinateLocationInArray][1][0]);
+        console.log("Coord2 long = " + polylineLines[coordinateLocationInArray][1][1]);
+        */
+        //var line = [[polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]], [polylineLines[coordinateLocationInArray][1][0],polylineLines[coordinateLocationInArray][1][1]]];
+        
+      
+        //console.log("distance in meter: " + totaldistance); // returns the distance in meter
+        
+        //console.log("totale distance: " + puntdistance);
+        /*
+        var PolylineTime = BerekenTijd(d,GekozenRouteType);
+        PolylineTime = PolylineTime/60;
+        */
+        if(localStorage.getItem("Reverse") == "true")
+        {
+          
+          //console.log("in reverse");
+          // ------------------------DISTANCE BEREKENEN----------------------------
+          var punt1;
+          var punt2;
+          //console.log(coordinatesToCalculate[i].lat);
+          punt1 = [polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]];
+          punt2 = [polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]];
+          
+          var punt1lat = JSON.parse(punt1[0]);
+          var punt1lng = JSON.parse(punt1[1]);
+          var punt2lat = JSON.parse(punt2[0]);
+          var punt2lng = JSON.parse(punt2[1]);
+          var rad = function(x) {
+            return x * Math.PI / 180;
+          };
+          var R = 6371000; // Earth’s mean radius in meter
+          var dLat = rad(punt2lat - punt1lat);
+          var dLong = rad(punt2lng - punt1lng);
+          var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(rad(punt1lat)) * Math.cos(rad(punt2lat)) *
+            Math.sin(dLong / 2) * Math.sin(dLong / 2);
+          var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          var d = R * c;
+          totaldistance = totaldistance + d;
+          //-----------------------------------------------------------------------
+          mymap.removeLayer(window["polyline" + (coordinateLocationInArray+1)]);
+          //console.log("coordinateLocationInArray: " +coordinateLocationInArray );
+          //  mymap.removeLayer(window["polyline" + (coordinateLocationInArray+1)]);
+          if(coordinateLocationInArray+1 !=  polylineLines.length)
+          {
+            window['polyline' + (coordinateLocationInArray+1)] = [[polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]],[polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]]];
+            window['polyline' + (coordinateLocationInArray+1)] = L.polyline( window['polyline' + (coordinateLocationInArray+1)],{color: 'lightgreen'}).addTo(mymap); 
+          }
+          else
+          {
+            console.log("route finished");
+          }
+          if((coordinateLocationInArray + 2) !=  polylineLines.length)
+          {
+            window['polyline' + (coordinateLocationInArray+2)] = [[polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]],[polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]]];
+            window['polyline' + (coordinateLocationInArray+2)] = L.polyline( window['polyline' + (coordinateLocationInArray+2)],{color: 'yellow'}).addTo(mymap);
+          }
+          else
+          {
+            console.log("yellow finished");
+          }
+          coordinateLocationInArray++;
+          document.getElementById("RouteAfgelegdeAfstand").innerHTML = (totaldistance/1000).toFixed(2)  + "km";
+          document.getElementById("RouteTotaleAfstand").innerHTML = GekozenRouteDistance;
+          document.getElementById("RouteResterendeTijd").innerHTML = TotaleDuurRoute;
+
+        }
+        else if(localStorage.getItem("Reverse") == "false")
+        {
+          // ------------------------DISTANCE BEREKENEN----------------------------
+          var punt1;
+          var punt2;
+          //console.log(coordinatesToCalculate[i].lat);
+
+          punt1 = [polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]];
+          punt2 = [polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]];
+          
+          var punt1lat = JSON.parse(punt1[0]);
+          var punt1lng = JSON.parse(punt1[1]);
+          var punt2lat = JSON.parse(punt2[0]);
+          var punt2lng = JSON.parse(punt2[1]);
+          var rad = function(x) {
+            return x * Math.PI / 180;
+          };
+          var R = 6371000; // Earth’s mean radius in meter
+          var dLat = rad(punt2lat - punt1lat);
+          var dLong = rad(punt2lng - punt1lng);
+          var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(rad(punt1lat)) * Math.cos(rad(punt2lat)) *
+            Math.sin(dLong / 2) * Math.sin(dLong / 2);
+          var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          var d = R * c;
+          totaldistance = totaldistance + d;
+          //-----------------------------------------------------------------------
+          mymap.removeLayer(window["polyline" + (coordinateLocationInArray+1)]);
+          //mymap.removeLayer(window["polyline" + (coordinateLocationInArray+2)]);
+        
+          if(coordinateLocationInArray ==  polylineLines.length)
+          {
+            console.log("route finished");
+          }
+          else
+          {
+            window['polyline' + (coordinateLocationInArray+1)] = [[polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]],[polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]]];
+            window['polyline' + (coordinateLocationInArray+1)] = L.polyline( window['polyline' + (coordinateLocationInArray+1)],{color: 'lightgreen'}).addTo(mymap); 
+          }
+          if((coordinateLocationInArray + 2) ==  polylineLines.length)
+          {
+            console.log("yellow finished")
+          }
+          else
+          {
+            window['polyline' + (coordinateLocationInArray+2)] = [[polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]],[polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]]];
+            window['polyline' + (coordinateLocationInArray+2)] = L.polyline( window['polyline' + (coordinateLocationInArray+2)],{color: 'yellow'}).addTo(mymap);
+          }
+         
+          coordinateLocationInArray ++;
+          document.getElementById("RouteAfgelegdeAfstand").innerHTML = (totaldistance/1000).toFixed(2)  + "km";
+          document.getElementById("RouteTotaleAfstand").innerHTML = GekozenRouteDistance;
+          document.getElementById("RouteResterendeTijd").innerHTML = TotaleDuurRoute;
+          
+        }
+        time = time + DuurPerPolyline;
+        if(time >= 1)
+        {
+          time = time -1;
+          TotaleDuurRoute = TotaleDuurRoute -1;
+
+        }
+        //console.log("time = " + time);
+        //console.log(window["polyline" + (coordinateLocationInArray+1)]);
+      
+        /*
+        window['polyline' + (coordinateLocationInArray+1)].setStyle(
+        {
+          color: 'green'
+        });
+        */
+
+
+        /*console.log("polylineLines = " + polylineLines[0][0]);
+        console.log("yes");
+        console.log("lat = " + lat);
+        console.log("long = " + long);
+        */
+        /*if(polylineLines[coordinateLocationInArray][1][0] == lat && polylineLines[coordinateLocationInArray][1][1] == long)
+        {
+          console.log("lng: " + polylineLines[coordinateLocationInArray][1][1] + "lat" + polylineLines[coordinateLocationInArray][1][0]);
+          console.log(coordinateLocationInArray);
+          
+
+        }
+        if(polylineCoords[coordinateLocationInArray].lng == long && polylineCoords[coordinateLocationInArray].lat == lat)
+        {
+          console.log("lng: " + polylineCoords[coordinateLocationInArray].lng + "lat" + polylineCoords[coordinateLocationInArray].lat);
+          console.log(coordinateLocationInArray);
+          coordinateLocationInArray ++;
+        }
+        else
+        {
+          console.log("volgende coordinaten niet bereikt dus blijft bij: " + coordinateLocationInArray);
+          //console.log("lng: " + polylineCoords[coordinateLocationInArray].lng + "lat" + polylineCoords[coordinateLocationInArray].lat);
+          //coordinateLocationInArray ++;
+        }*/
+      }
+      //kijken of de gebruiker op de bepaalde coordinaten is om de polyline achter hem groen te maken
+      
+    }
+    else
+    {
+      console.log("geen coordinates");
+    }
+    //--------------------------------------------------------------------------------------------------
     
   }
   else
   {
-    console.log("geen coordinates");
+    console.log("route niet gestart");
   }
-  //--------------------------------------------------------------------------------------------------
-
+  
 }
-
-
 function onLocationError(e) {
   console.log("Location error: " + e);
 }
+function RouteDistanceBerekenen(coordinates)
+{
+  var coordinatesToCalculate = coordinates;
+  var punt1;
+  var punt2;
+  var puntdistance = 0;
+  for(var i = 0; i < coordinatesToCalculate.length; i++)
+  {
+    //console.log(coordinatesToCalculate[i].lat);
+    if(i>0)
+    {
+      punt1 = [JSON.stringify(coordinatesToCalculate[i-1].lat), JSON.stringify(coordinatesToCalculate[i-1].lng)];
+      punt2 = [JSON.stringify(coordinatesToCalculate[i].lat), JSON.stringify(coordinatesToCalculate[i].lng)];
+      
+      var punt1lat = JSON.parse(punt1[0]);
+      var punt1lng = JSON.parse(punt1[1]);
+      var punt2lat = JSON.parse(punt2[0]);
+      var punt2lng = JSON.parse(punt2[1]);
+      var rad = function(x) {
+        return x * Math.PI / 180;
+      };
+      var R = 6371000; // Earth’s mean radius in meter
+      var dLat = rad(punt2lat - punt1lat);
+      var dLong = rad(punt2lng - punt1lng);
+      var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(rad(punt1lat)) * Math.cos(rad(punt2lat)) *
+        Math.sin(dLong / 2) * Math.sin(dLong / 2);
+      var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      var d = R * c;
+      puntdistance = puntdistance + d;
+      //console.log("distance in meter: " + d); // returns the distance in meter
+    }
+  }
+  //console.log("totale distance: " + puntdistance);
+  return puntdistance;
 
+}
+function ReverseRoute()
+{
+  if(localStorage.getItem("Reverse") == "true")
+  {
+    localStorage.setItem("Reverse","false");
+    mymap.removeLayer(StartMarker);
+    coords.reverse();
+    StartMarker = L.marker([coords[0].lat,coords[0].lng], {icon: greenIcon});
+    mymap.addLayer(StartMarker);
+    polylineLines.reverse();
+  }
+  else if(localStorage.getItem("Reverse") == "false")
+  {
+    localStorage.setItem("Reverse","true");
+    mymap.removeLayer(StartMarker);
+    coords.reverse();
+    StartMarker = L.marker([coords[0].lat,coords[0].lng], {icon: greenIcon});
+    mymap.addLayer(StartMarker);
+    polylineLines.reverse();
+  }
+}
+function StartRoute()
+{
+  document.getElementById("BeforeRoute").style.display = 'none';
+  document.getElementById("RouteInfo").style.display = 'block';
+  localStorage.setItem("RouteStart","true");
+  coordinateLocationInArray = 0;
+  mymap.removeLayer(StartMarker);
+}
+function StopRoute()
+{
+  polylineLines = [];
+  console.log("stop route");
+  document.getElementById("mapid").style.height = "90%";
+  document.getElementById("btnRoute").style.display = 'block';
+  document.getElementById("BeforeRoute").style.display = 'none';
+  document.getElementById("RouteInfo").style.display = "none";
+  for(i in mymap._layers) 
+  {
+    if(mymap._layers[i]._path != undefined) 
+    {
+      try 
+      {
+        mymap.removeLayer(mymap._layers[i]);
+      }
+      catch(e) 
+      {
+          console.log("problem with " + e + mymap._layers[i]);
+      }
+    }
+  }
+}
 navigator.geolocation.watchPosition(onLocationFound, onLocationError, {
   maximumAge: 1000,
   timeout: 2000
