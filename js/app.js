@@ -34,39 +34,59 @@ try{
 catch(err)
 {
   console.log(" initialize framework7: " + err);
-}
-
-
+} 
+localforage.getItem('HeritageDeHangar', function(err, value) 
+{
+   console.log(value) 
+   var canvass = document.getElementById("heritageTest");
+   canvass.setAttribute("src",value.imagename);
+});
 
 /*firebase initialisation*/
 var firebaseConfig, database, storage, mymap, polylineCoords, lat, long, polyline, coords;
 var polylineLines = [];
 var polylineNames = [];
 var totaldistance = 0;
-var TotaleDuurRoute,ResterendeDuurRoute,GekozenRouteDistance, GekozenRouteType,DuurPerPolyline, greenIcon, StartMarker;
+var TotaleDuurRoute,ResterendeDuurRoute,GekozenRouteDistance, GekozenRouteType,DuurPerPolyline, greenIcon, StartMarker,HeritageIcon;
 var time = 0;
-// Initialize Firebase
-//localStorage.setItem("EersteKeerGeladen","false"); 
-/*
-function addScripts()
-{
-  var div = document.getElementById("firebaseScripts");
-  var firebaseScript1 = document.createElement("script");
-  firebaseScript1.src = "https://www.gstatic.com/firebasejs/8.2.7/firebase-app.js";
-  div.appendChild(firebaseScript1);
+var HeritageNames = [];
+greenIcon = L.icon(
+  {
+    iconUrl: '\img/start-flag.png',
+    iconSize:     [30, 85], // size of the icon
+    iconAnchor:   [0, 85], // point of the icon which will correspond to marker's location
+  });
+HeritageIcon = L.icon(
+  {
+    iconUrl: '\img/building.png',
+    iconSize:     [25, 75], // size of the icon
+    iconAnchor:   [0, 75], // point of the icon which will correspond to marker's location
+  });
 
-  var firebaseScript2 = document.createElement("script");
-  firebaseScript2.src = "https://www.gstatic.com/firebasejs/8.2.7/firebase-database.js";
-  div.appendChild(firebaseScript2);
-
-  var firebaseScript3 = document.createElement("script");
-  firebaseScript3.src = "https://www.gstatic.com/firebasejs/8.2.7/firebase-storage.js";
-  div.appendChild(firebaseScript3);
-  localStorage.setItem("firebaseScriptsLoaded","true");
-}
-*/
 app.dialog.preloader();
 Setup();
+
+/*
+function CreateHeritageForage()
+{
+  if(localStorage.getItem("ForageForage") == undefined)
+  {
+    localStorage.setItem("ForageForage","false");
+  }
+  else if(localStorage.getItem("ForageForage") == "false")
+  {
+    HeritageTable = localforage.createInstance(
+    {
+      name: "ZonienWoud",
+      storeName: "Heritage"
+    });
+  }
+  else if(localStorage.getItem("ForageForage") == "true")
+  {
+
+  }
+}
+*/
 function Setup()
 {
   localStorage.setItem("MapNLInitialised","false");
@@ -239,7 +259,13 @@ function AantalAssets()
       {
         //alert("in laatste query");
         x = x + gatesnapshot.numChildren();
-        localStorage.setItem("aantalAssets",x);
+        var refHeritage = firebase.database().ref('flamelink/environments/production/content/heritage/en-US');
+        refHeritage.on("value", function(heritagenapshot) 
+        {
+          x = x + heritagenapshot.numChildren();
+          localStorage.setItem("aantalAssets",x);
+        });
+        
         //alert("aantal assets:" + x);
       });
     });
@@ -329,6 +355,8 @@ function InizializeFirebase()
     }
   }
 }
+var canvas = document.getElementById("heritageImage");
+context = canvas.getContext('2d');
 function infoOphalen()
 {
   //addScripts();
@@ -352,6 +380,7 @@ function infoOphalen()
   var aantalAssets = 0;
   var geladenAssets = 0;
   var progress = 0;
+  var heritageName
   app.dialog.close();
   var dialog = app.dialog.progress('Loading assets', progress);
   var assetsInterval = setInterval(function()
@@ -364,6 +393,7 @@ function infoOphalen()
       clearInterval(assetsInterval);
       //alert("het is na de dialog code");
       var berekenProgress =  100 / aantalAssets;
+      //console.log("berekenprogress = " + berekenProgress);
       //console.log("aantal assets: " + aantalAssets);
       //console.log("aantal assets = " + aantalAssets);
       
@@ -521,8 +551,135 @@ function infoOphalen()
         {
           alert("eerste assets laden: " + err);
         }
+        try
+        {
+          var refHeritage = firebase.database().ref('flamelink/environments/production/content/heritage/en-US');
+          firebase.database().ref(refHeritage).on('value', function(snapshot)
+          {
+            console.log("aantal heritages : " + snapshot.numChildren());
+            //alert("in de firebase.on voor laatste assets");
+            snapshot.forEach(function(childSnapshot)  
+            {
+              progress = progress + berekenProgress;
+              localStorage.setItem("progress",progress);
+              try
+              {
+                dialog.setProgress(localStorage.getItem("progress"));
+                geladenAssets = geladenAssets + 1;
+                localStorage.setItem("geladenAssets", geladenAssets);
+              }
+              catch(err)
+              {
+                alert("route error: " + err);
+              }
+              //alert("in de foreach voor laatste assets");
+              var value = childSnapshot.val();
+              for (var key of Object.keys(value)) 
+              {
+                if(key == "__meta__")
+                {
+                  //console.log(key + " -> " + x[key]);
+                  delete value[key];
+                }
+                if(key == "image")
+                {
+                  //console.log(key + " -> " + x[key]);
+                  delete value[key];
+                }
+                // console.log(key + " -> " + x[key]);
+              }
+              //console.log("heritage : " + JSON.stringify(value,null,2));
+              
+              if(value.imagename == "")
+              {
+                console.log("leeg");
+              }
+              else
+              {
+                var sourceImage = new Image(); sourceImage.crossOrigin="anonymous";
+                sourceImage.onload = function() 
+                {
+                    // Create a canvas with the desired dimensions
+                    var canvas = document.getElementById("heritageImage");
+                    canvas.width = 320;
+                    canvas.height = 180;
+            
+                    // Scale and draw the source image to the canvas
+                    canvas.getContext("2d").drawImage(sourceImage, 0, 0, 320, 180);
+            
+                    // Convert the canvas to a data URL in PNG format
+                    callback(canvas.toDataURL());
+                    //console.log(canvas.toDataURL());
+                }
+                function callback(x)
+                {
+                  value.imagename = x;
+                  //console.log(value.name.nl + ":" + x);
+                  heritageName = value.name.nl;
+                  heritageName = heritageName.replace(/\s/g, "");
+                  HeritageNames.push(heritageName);
+                  //console.log("heritageNames = " + HeritageNames);
+                  localStorage.setItem("HeritageNames", JSON.stringify(HeritageNames));
+                  try
+                  {
+                    localforage.setItem("Heritage" + heritageName, value, function(err, result) 
+                    {
+                      //console.log(result.value);
+                      if(err != undefined)
+                      {
+                        console.log("heritage error" + err);
+                      }
+                    });
+                    //localStorage.setItem("Heritage" + heritageName, JSON.stringify(value));
+                    let str = x;
+                    let str_size = str.length;
+                    //console.log("goed toegevoegd : " + str_size);
+
+                  }
+                  catch(err)
+                  {
+                    localforage.setItem("Heritage" + heritageName, JSON.stringify(value));
+                    console.log("localstorage toDataUrl error : " + err);
+                    console.log(x);
+                    //console.log("string length = " + x.length)
+                    //console.log("middelpunt = " + (x.length/2));
+                    //------------------------------------------------------------------------------
+                    
+                    //------------------------------------------------------------------------------
+                  }
+                  
+                }
+                sourceImage.src = value.imagename;
+              //console.log("pngUrl = " + pngUrl);
+
+              /*fetch(value.imagename)
+              .then(response => response.blob())
+              .then(images => 
+                {
+                  // Then create a local URL for that image and print it 
+                  outside = URL.createObjectURL(images)
+                  console.log(outside)
+                  base_image = new Image();
+                  base_image.src = outside;
+                  base_image.onload = function()
+                  {
+                    context.drawImage(base_image, 320, 180);
+                  }
+                  var pngUrl = canvas.toDataURL(); // PNG is the default
+                  console.log("imageURL = " + value.imagename);
+                  console.log("pngUrl = " + pngUrl);
+                })
+                */
+                dialog.setText("Asset " + geladenAssets + " of " + aantalAssets+ " loaded");
+              }
+            });
+          });
+        }
+        catch(err)
+        {
+          console.log("heritage error:" + err);
+        }
           //---------------------------------------------------------------------------------------------------
-        
       }
       else
       {
@@ -534,7 +691,6 @@ function infoOphalen()
     {
       if(localStorage.getItem("progress") >99)
       {
-
         try
         {
           //---------------------------CHECK VOOR UPDATES------------------------------
@@ -567,8 +723,11 @@ function infoOphalen()
   //---------------------------------------------------------------------------
 }
 
+
+
 function Kaart(routePoints)
 {
+  HeritageMarker
   var mapLoad = "";
   var routeCoordinaten = routePoints;
   if(localStorage.getItem("MapNLInitialised") == "false")
@@ -756,6 +915,67 @@ function Kaart(routePoints)
       } 
     }
   }
+}
+HeritageLayer();
+function HeritageLayer()
+{
+  var heritageLayer = [];
+  var layerGroup = L.layerGroup();
+  var longtext;
+  var aantal = JSON.parse(localStorage.getItem("HeritageNames")).length;
+  var names = JSON.parse(localStorage.getItem("HeritageNames"));
+  console.log("aantal = " + names[1]);
+  for (var i = 0; i < aantal; i++)
+  {
+    //testLocalStorage[i] = localStorage.getItem(localStorage.key(i));
+    try
+    {
+      localforage.getItem("Heritage" + names[i], function(err, value) 
+      {
+        retun
+        longtext = value.longtext.nl;
+        //console.log(value) 
+        console.log("names[i] = " + names[i]);
+        var name = value.name.nl.replace(/\s/g, "");
+        console.log("Name = " + name);
+        
+        if(name == names[i])
+        {
+          var heritagePopupContent =
+          `
+            <div class="card demo-card-header-pic">
+            <a href="/Event/">
+            <div style="background-image:url(` + value.imagename + `)"
+              class="card-header align-items-flex-end"></div>
+            </a>
+            <div class="card-content card-content-padding">
+              <p class="date">` + value.name.nl + `</p>
+              <p> ` + value.longtext.nl + `</p>
+            </div>
+            <div class="card-footer"><a href="#" class="link">Meer Info</a></div>
+            </div>
+          `;
+          heritageLayer.push(L.marker([value.latitude, value.longitude]).bindPopup(heritagePopupContent));
+          
+
+        }
+      });
+      console.log("longtext = " + longtext);
+    }
+    catch(err)
+    {
+      console.log("heritage error: " + err);
+    }
+  }
+  console.log(heritageLayer);
+  /*layerGroup.addLayer(heritageLayer);
+  
+  var overlay = 
+  {
+    'Heritage': layerGroup,
+  }; 
+  L.control.layers(null, overlay).addTo(mymap);
+  */
 }
 function routeDivVullen(id)
 {
@@ -1035,12 +1255,6 @@ function GekozenRoute(name)
   coords = JSON.parse(localStorage.getItem(localstorageRoutePoints));
   console.log(localstorageRoutePoints);
 
-  greenIcon = L.icon(
-  {
-    iconUrl: '\img/start-flag.png',
-    iconSize:     [30, 85], // size of the icon
-    iconAnchor:   [0, 85], // point of the icon which will correspond to marker's location
-  });
   StartMarker = L.marker([coords[0].lat,coords[0].lng], {icon: greenIcon});
   mymap.addLayer(StartMarker);
 
@@ -1428,25 +1642,23 @@ function onLocationFound(e)
 {
   // if position defined, then remove the existing position marker and accuracy circle from the map
   //console.log("location found");
-
-  if(localStorage.getItem("RouteStart") == "true")
+  if(localStorage.getItem("MapNLInitialised") == "true")
   {
     if (current_position) 
     {
       mymap.removeLayer(current_position);
     }
-    if(localStorage.getItem("MapNLInitialised") == "true")
+    const latlng = 
     {
-      const latlng = 
-      {
-        lat: e.coords.latitude,
-        lng: e.coords.longitude
-      };
-      lat = e.coords.latitude;
-      long = e.coords.longitude;
-      current_position = L.marker(latlng).addTo(mymap);
-    }
-    
+      lat: e.coords.latitude,
+      lng: e.coords.longitude
+    };
+    lat = e.coords.latitude;
+    long = e.coords.longitude;
+    current_position = L.marker(latlng).addTo(mymap);
+  }
+  if(localStorage.getItem("RouteStart") == "true")
+  {
     //---------------------------------------------------------------------------------------
     if(polylineLines != undefined)
     {
@@ -1734,3 +1946,8 @@ navigator.geolocation.watchPosition(onLocationFound, onLocationError, {
   maximumAge: 1000,
   timeout: 2000
 });
+function GetHeritage()
+{
+  localforage.getItem('HeritageDeHangar', function(err, value) { console.log(value) });
+  console.log("heritageNames = " + HeritageNames);
+}
