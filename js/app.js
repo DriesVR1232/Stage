@@ -35,21 +35,46 @@ catch(err)
 {
   console.log(" initialize framework7: " + err);
 } 
-localforage.getItem('HeritageDeHangar', function(err, value) 
+
+/*localforage.getItem('HeritageDeHangar', function(err, value) 
 {
    console.log(value) 
    var canvass = document.getElementById("heritageTest");
    canvass.setAttribute("src",value.imagename);
 });
-
+*/
 /*firebase initialisation*/
 var firebaseConfig, database, storage, mymap, polylineCoords, lat, long, polyline, coords;
 var polylineLines = [];
 var polylineNames = [];
 var totaldistance = 0;
-var TotaleDuurRoute,ResterendeDuurRoute,GekozenRouteDistance, GekozenRouteType,DuurPerPolyline, greenIcon, StartMarker,HeritageIcon;
+var TotaleDuurRoute,ResterendeDuurRoute,GekozenRouteDistance, GekozenRouteType,DuurPerPolyline, greenIcon, StartMarker,HeritageIcon,aantalHeritages;
 var time = 0;
 var HeritageNames = [];
+var heritageLayer = [];
+var request,db;
+var HeritageObjects = [];
+if(localStorage.getItem("indexedDB") == undefined)
+{
+  // Let us open our database
+  request = indexedDB.open("Heritage",1);
+  localStorage.setItem("indexedDB","true");
+  request.onerror = function(event) 
+  {
+    console.log("db error");
+  };
+  request.onsuccess = function(event) 
+  {
+    console.log("db aangemaakt");
+    db = request.result;
+  };
+  request.onupgradeneeded = function(event)
+  {
+    console.log("upgrade called");
+    db = request.result;
+    db.createObjectStore("Heritage_images",{keyPath : "Title"});
+  };
+}
 greenIcon = L.icon(
   {
     iconUrl: '\img/start-flag.png',
@@ -59,34 +84,13 @@ greenIcon = L.icon(
 HeritageIcon = L.icon(
   {
     iconUrl: '\img/building.png',
-    iconSize:     [25, 75], // size of the icon
-    iconAnchor:   [0, 75], // point of the icon which will correspond to marker's location
+    iconSize:     [25, 50], // size of the icon
+    iconAnchor:   [0, 50], // point of the icon which will correspond to marker's location
   });
 
 app.dialog.preloader();
 Setup();
 
-/*
-function CreateHeritageForage()
-{
-  if(localStorage.getItem("ForageForage") == undefined)
-  {
-    localStorage.setItem("ForageForage","false");
-  }
-  else if(localStorage.getItem("ForageForage") == "false")
-  {
-    HeritageTable = localforage.createInstance(
-    {
-      name: "ZonienWoud",
-      storeName: "Heritage"
-    });
-  }
-  else if(localStorage.getItem("ForageForage") == "true")
-  {
-
-  }
-}
-*/
 function Setup()
 {
   localStorage.setItem("MapNLInitialised","false");
@@ -96,6 +100,7 @@ function Setup()
     localStorage.setItem("reloaded","false");
     console.log("set reloaded");
   }
+
   checkConnection();
   getStatus();
   var ScriptAndUpdateCheckInterval = setInterval(function(){
@@ -404,6 +409,11 @@ function infoOphalen()
       }
       if(localStorage.getItem("EersteKeerGeladen") == "false")
       {
+        if(localStorage.getItem("db") != undefined)
+        {
+          db = localStorage.getItem("db");
+          console.log("db = " + JSON.stringify(db));
+        }
         //----------------------------Data over gates ophalen-------------------------------------------------
         var gates = [];
         try
@@ -557,6 +567,7 @@ function infoOphalen()
           firebase.database().ref(refHeritage).on('value', function(snapshot)
           {
             console.log("aantal heritages : " + snapshot.numChildren());
+            aantalHeritages = snapshot.numChildren();
             //alert("in de firebase.on voor laatste assets");
             snapshot.forEach(function(childSnapshot)  
             {
@@ -620,56 +631,10 @@ function infoOphalen()
                   HeritageNames.push(heritageName);
                   //console.log("heritageNames = " + HeritageNames);
                   localStorage.setItem("HeritageNames", JSON.stringify(HeritageNames));
-                  try
-                  {
-                    localforage.setItem("Heritage" + heritageName, value, function(err, result) 
-                    {
-                      //console.log(result.value);
-                      if(err != undefined)
-                      {
-                        console.log("heritage error" + err);
-                      }
-                    });
-                    //localStorage.setItem("Heritage" + heritageName, JSON.stringify(value));
-                    let str = x;
-                    let str_size = str.length;
-                    //console.log("goed toegevoegd : " + str_size);
-
-                  }
-                  catch(err)
-                  {
-                    localforage.setItem("Heritage" + heritageName, JSON.stringify(value));
-                    console.log("localstorage toDataUrl error : " + err);
-                    console.log(x);
-                    //console.log("string length = " + x.length)
-                    //console.log("middelpunt = " + (x.length/2));
-                    //------------------------------------------------------------------------------
-                    
-                    //------------------------------------------------------------------------------
-                  }
+                  HeritageObjects.push(value);
                   
                 }
                 sourceImage.src = value.imagename;
-              //console.log("pngUrl = " + pngUrl);
-
-              /*fetch(value.imagename)
-              .then(response => response.blob())
-              .then(images => 
-                {
-                  // Then create a local URL for that image and print it 
-                  outside = URL.createObjectURL(images)
-                  console.log(outside)
-                  base_image = new Image();
-                  base_image.src = outside;
-                  base_image.onload = function()
-                  {
-                    context.drawImage(base_image, 320, 180);
-                  }
-                  var pngUrl = canvas.toDataURL(); // PNG is the default
-                  console.log("imageURL = " + value.imagename);
-                  console.log("pngUrl = " + pngUrl);
-                })
-                */
                 dialog.setText("Asset " + geladenAssets + " of " + aantalAssets+ " loaded");
               }
             });
@@ -706,6 +671,7 @@ function infoOphalen()
              clearInterval(progressinterval);
              dialog.close();
              localStorage.setItem("EersteKeerGeladen","true");
+             
              //alert("eerstekeergelanden = TRUE");
            });
          //----------------------------------------------------------------------------
@@ -718,16 +684,71 @@ function infoOphalen()
       }
     },200);
   }, 100);
+  
+  
   localStorage.setItem("RouteDrawn","initial");
   localStorage.setItem("MapNLInitialised","false");
+  
   //---------------------------------------------------------------------------
 }
+var heritageInterval = setInterval( function()
+{
+  if(HeritageObjects.length == aantalHeritages)
+  {
+    clearInterval(heritageInterval);
+    var DBOpenRequest = window.indexedDB.open("Heritage", 4);
+    DBOpenRequest.onsuccess = function(event) 
+    {
+    
+      // store the result of opening the database in the db variable.
+      // This is used a lot below
+      db = DBOpenRequest.result;
+    
+      // Run the addData() function to add the data to the database
+      addData();
+    };
+
+  }
+},100);
 
 
+
+function addData()
+{
+  var transaction = db.transaction("Heritage_images", "readwrite");
+  var objectStore = transaction.objectStore("Heritage_images");
+  for(var i = 0; i< aantalHeritages; i++)
+  {
+    var value = HeritageObjects[i];
+    console.log("HeritageObjects[i] = " + JSON.stringify(HeritageObjects[i]));
+    var note = 
+    {
+    Title: HeritageNames[i],
+    value
+    }
+    var objectStoreRequest = objectStore.add(note);
+  }
+  
+  objectStoreRequest.onsuccess = function(event) {
+    // report the success of the request (this does not mean the item
+    // has been stored successfully in the DB - for that you need transaction.onsuccess)
+  };
+  transaction.onsuccess = function(event)
+  {
+    console.log("TRANSACTION SUCCESSFULL");
+  } 
+  /*var tx = db.transaction("Heritage_images","readwrite");
+  // Now store is available to be populated
+  var heritageInfo = tx.objectStore("Heritage_images");
+  heritageInfo.add(note);
+  */
+
+  console.log("db = " + db);
+
+}
 
 function Kaart(routePoints)
 {
-  HeritageMarker
   var mapLoad = "";
   var routeCoordinaten = routePoints;
   if(localStorage.getItem("MapNLInitialised") == "false")
@@ -771,53 +792,48 @@ function Kaart(routePoints)
         });
         var layerGroup = L.layerGroup();
         //console.log(coords);
-        var x = 0;
-        //for(var i = 0; i < coords.length; i++) 
-        //{
-          /*x++
-          if(x == 10)
-          {
-            var rusbroeckMarker = new L.marker([coords[i][0], coords[i][1]]).bindPopup("Dit is een marker op coordinaten " + coords[i][0] + ", " + coords[i][1]);
-          layerGroup.addLayer(rusbroeckMarker);
-            x = 0;
-          }*/
-        /* var boomtestcontent =`
-          <div class="card demo-card-header-pic">
-          <a href="/Event/">
-          <div style="background-image:url(https://cdn.framework7.io/placeholder/nature-1000x600-3.jpg)"
-            class="card-header align-items-flex-end"></div>
-          </a>
-          <div class="card-content card-content-padding">
-            <p class="date">Speciale boom</p>
-            <p>Quisque eget vestibulum nulla. Quisque quis dui quis ex ultricies efficitur vitae non felis. Phasellus
-              quis nibh hendrerit...</p>
-          </div>
-          <!--<div class="card-footer"><a href="#" class="link">Like</a><a href="#" class="link">Read more</a></div>-->
-          </div>
-          `;
-          var coordinatenTestContent = "Dit is een marker op coordinaten " + coords[i][0] + ", " + coords[i][1];
-          var rusbroeckMarker = new L.marker([coords[i][0], coords[i][1]]).bindPopup(coordinatenTestContent);
-          layerGroup.addLayer(rusbroeckMarker); 
-        }*/ 
-        var gpx = 'gpx/middenhutwandeling.gpx';
-        /*new L.G)PX(gpx, {async: true}).on('loaded', function(e) {
-          mymap.fitBounds(e.target.getBounds());
-        }).addTo(mymap); */
-
-
-
-        /*
-        var RuusbroeckLine =  L.polyline([[coords]],{color: 'red'});
-        layerGroup.addLayer(RuusbroeckLine);
-        */
-
-        /*om naar deze specifieke lijn op de map te gaan*/
-        //mymap.fitBounds(RuusbroeckLine.getBounds());
-        var overlay = 
+        var DBOpenRequest = window.indexedDB.open("Heritage", 4);
+        DBOpenRequest.onsuccess = function(event) 
         {
-          'Ruusbroeck': layerGroup,
-        }; 
-        L.control.layers(null, overlay).addTo(mymap);
+          db = DBOpenRequest.result;
+          console.log("db = " + db);
+          var tx = db.transaction("Heritage_images","readonly");
+          var opgehaaldeHeritage = tx.objectStore("Heritage_images");
+          var request = opgehaaldeHeritage.getAll();
+          request.onsuccess = function(evt) 
+          {  
+            // Extract all the objects from the event.target.result
+          
+            var cursor = evt.target.result;
+            console.log(cursor[1]);
+            for(var i = 0; i< cursor.length;i++)
+            {
+              var boomtestcontent =`
+              <div class="card demo-card-header-pic">
+              <a href="/Event/">
+              <div style="background-image:url(` + cursor[i].value.imagename +`)"
+                class="card-header align-items-flex-end"></div>
+              </a>
+              <div class="card-content card-content-padding">
+                <p class="date">` + cursor[i].value.name.nl +`</p>
+                <p>` +cursor[i].value.longtext.nl +`</p>
+              </div>
+              </div>
+              `;
+              var marker = new L.marker([cursor[i].value.latitude, cursor[i].value.longitude], {icon: HeritageIcon}).bindPopup(boomtestcontent);
+              layerGroup.addLayer(marker);
+            }
+            var overlay = 
+            {
+              'Heritage': layerGroup,
+            }; 
+            L.control.layers(null, overlay).addTo(mymap);
+            
+            //console.log("Heritage info = " + JSON.stringify(cursor.value,null,2));
+            //cursor.continue();
+          }
+        }
+
         //----------------------------------------------------------------------------------------
       }
       else
@@ -911,36 +927,32 @@ function Kaart(routePoints)
           localStorage.setItem("RouteDrawn","true");
           console.log("geen coordinates meegegeven");
         }
-        
       } 
     }
   }
 }
-HeritageLayer();
+//HeritageLayer();
 function HeritageLayer()
 {
-  var heritageLayer = [];
   var layerGroup = L.layerGroup();
   var longtext;
   var aantal = JSON.parse(localStorage.getItem("HeritageNames")).length;
   var names = JSON.parse(localStorage.getItem("HeritageNames"));
-  console.log("aantal = " + names[1]);
+  //console.log("aantal = " + names[1]);
   for (var i = 0; i < aantal; i++)
   {
     //testLocalStorage[i] = localStorage.getItem(localStorage.key(i));
-    try
+    /*try
     {
       localforage.getItem("Heritage" + names[i], function(err, value) 
       {
-        retun
+        
         longtext = value.longtext.nl;
         //console.log(value) 
-        console.log("names[i] = " + names[i]);
+        console.log("latitude = " + value.latitude);
+        console.log("longitude = " + value.longitude);
         var name = value.name.nl.replace(/\s/g, "");
         console.log("Name = " + name);
-        
-        if(name == names[i])
-        {
           var heritagePopupContent =
           `
             <div class="card demo-card-header-pic">
@@ -955,27 +967,32 @@ function HeritageLayer()
             <div class="card-footer"><a href="#" class="link">Meer Info</a></div>
             </div>
           `;
-          heritageLayer.push(L.marker([value.latitude, value.longitude]).bindPopup(heritagePopupContent));
-          
-
-        }
-      });
-      console.log("longtext = " + longtext);
+          //heritageLayer.push(L.marker([value.latitude, value.longitude]).bindPopup(heritagePopupContent));
+          var HeritagePoint = L.marker([value.latitude, value.longitude]).bindPopup(heritagePopupContent);
+          layerGroup.addLayer(HeritagePoint);
+          var overlay = 
+          {
+            'Heritage': layerGroup,
+          }; 
+          L.control.layers(null, overlay).addTo(mymap);
+        });
     }
     catch(err)
     {
       console.log("heritage error: " + err);
-    }
+    }*/
   }
-  console.log(heritageLayer);
-  /*layerGroup.addLayer(heritageLayer);
+        var RuusbroeckLine =  L.polyline([50.7705,4.40102],{icon: HeritageIcon});
+        layerGroup.addLayer(RuusbroeckLine);
+
+        /*om naar deze specifieke lijn op de map te gaan*/
+        //mymap.fitBounds(RuusbroeckLine.getBounds());
+        var overlay = 
+        {
+          'Heritage': layerGroup,
+        }; 
+        L.control.layers(null, overlay).addTo(mymap);
   
-  var overlay = 
-  {
-    'Heritage': layerGroup,
-  }; 
-  L.control.layers(null, overlay).addTo(mymap);
-  */
 }
 function routeDivVullen(id)
 {
@@ -1946,8 +1963,3 @@ navigator.geolocation.watchPosition(onLocationFound, onLocationError, {
   maximumAge: 1000,
   timeout: 2000
 });
-function GetHeritage()
-{
-  localforage.getItem('HeritageDeHangar', function(err, value) { console.log(value) });
-  console.log("heritageNames = " + HeritageNames);
-}
