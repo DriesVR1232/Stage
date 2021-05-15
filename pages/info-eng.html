@@ -4,9 +4,9 @@
     <div class="navbar-inner">
       <div class="title">Encyclopedy</div>
       <div class="right">
-        <a href="#" class="tab-link tab">
-          <i class="icon f7-icons if-not-md">exclamationmark_circle</i>
-          <i class="icon material-icons md-only">error</i>
+        <a href="#" class="tab-link tab popup-open" data-popup=".popup-melding">
+          <i class="icon f7-icons if-not-md probleemicon"><img src=".\img/informationIconZonienwoud.png"></i>
+          <i class="icon material-icons md-only probleemicon"><img src=".\img/informationIconZonienwoud.png"></i>
         </a>
         <a class="link popover-open" href="#" data-popover=".popover-links">ENG</a>
         <div class="popover popover-links">
@@ -24,7 +24,7 @@
   </div> 
   <div class="toolbar tabbar-labels toolbar-bottom">
     <div class="toolbar-inner">
-      <a href="/map-eng/" class="tab-link ">
+      <a href="/map-eng/" class="tab-link " onclick="Kaart()">
         <i class="icon f7-icons if-not-md">map_fill</i>
         <i class="icon material-icons md-only">map</i>
         <span class="tabbar-label">Map</span>
@@ -36,117 +36,219 @@
       </a>
     </div>
   </div>
-  <div class="page-content">
-    <div class="list media-list">
-      <ul>
-        <li>
-          <a href="/erfgoed-eng/" class="item-link item-content">
-            <div class="item-media"><img src=".\img/erfgoed.jpg"
-                width="80" /></div>
-            <div class="item-inner">
-              <div class="item-title-row">
-                <div class="item-title">Heritage</div>
-              </div>
-              <div class="item-text">Looking for an interesting place? Discover here all the natural and historical heritage of the Sonian forest.</div>
-            </div>
-          </a>
-        </li>
-        <li>
-          <a href="/faunaFlora-eng/" class="item-link item-content">
-            <div class="item-media"><img src=".\img/fauna.jpg"
-                width="80" /></div>
-            <div class="item-inner">
-              <div class="item-title-row">
-                <div class="item-title">Fauna & Flora</div>
-              </div>
-              <div class="item-text">Here you can find information about the fauna that lives in the Sonian forest.</div>
-            </div>
-          </a>
-        </li>
-        <li>
-          <a href="/toegangspoorten-eng/" class="item-link item-content">
-            <div class="item-media"><img src=".\img/toegangspoort.jpg"
-                width="80" /></div>
-            <div class="item-inner">
-              <div class="item-title-row">
-                <div class="item-title">Access gates</div>
-              </div>
-              <div class="item-text">Here you can find more info about the access gates in the SOnian Forest.</div>
-            </div>
-          </a>
-        </li>
-      </ul>
-   </div>
-
-    <!--
-    <div class="card demo-card-header-pic">
-      <a href="#">
-        <div style="background-image:url(\img/fauna.jpg)" class="card-header align-items-flex-end"><b>Fauna and
-            Flora</b></div>
-      </a>
-      <div class="card-content card-content-padding">
-        <p>Here you an find information about the fauna that lives in the Sonian forest.</p>
-      </div>
-      <div class="card-footer center">
-        <a href="#" class="link"> </a>
-        <a href="#" class="link"><i class="icon f7-icons ios-only">search</i> <i
-            class="icon f7-icons ios-only icon-ios-fill">search</i> <i
-            class="icon material-icons md-only">search</i></a>
-        <a href="#" class="link"> </a>
-      </div>
-    </div>
-  -->
-    <!--
+    <div class="page-content">
+          <!--
           <div class="card demo-card-header-pic">
             <a href="#">
-            <div style="background-image:url(\img/flora.jpg)"
-              class="card-header align-items-flex-end"><b>Flora</b></div>
+            <div style="background-image:url(\img/fauna.jpg)"
+              class="card-header align-items-flex-end"><b>Fauna& Flora</b></div>
             </a>
             <div class="card-content card-content-padding">
-              <p>Here you an find information about the flora that lives in the Sonian forest.</p>
+              <p>Hier vind je info over de Fauna en Flora die zich in het Zoniënwoud bevind.</p>
             </div>
+            
             <div class="card-footer center">
                 <a href="#" class="link"> </a>
-                <a href="#" class="link"><i class="icon f7-icons ios-only">search</i> <i class="icon f7-icons ios-only icon-ios-fill">search</i> <i class="icon material-icons md-only">search</i></a>
+                <a href="/faunaFlora-nl/" class="link">
+                  <i class="icon f7-icons if-not-md">search</i>
+                  <i class="icon material-icons md-only">search</i>
+                </a>
                 <a href="#" class="link"> </a>
             </div>
           </div>
-        -->
-        <!--
-    <div class="card demo-card-header-pic">
-      <a href="#">
-        <div style="background-image:url(\img/erfgoed.jpg)" class="card-header align-items-flex-end"><b>Heritage</b>
-        </div>
-      </a>
-      <div class="card-content card-content-padding">
-        <p>Looking for an interesting place? Discover here all the natural and historical heritage of the Sonian forest.
-        </p>
-      </div>
-      <div class="card-footer center">
-        <a href="#" class="link"> </a>
-        <a href="/erfgoed-eng/" class="link"><i class="icon f7-icons ios-only">search</i> <i
-            class="icon f7-icons ios-only icon-ios-fill">search</i> <i
-            class="icon material-icons md-only">search</i></a>
-        <a href="#" class="link"> </a>
-      </div>
-    </div>
-  -->
-    <!--
           <div class="card demo-card-header-pic">
             <a href="#">
             <div style="background-image:url(\img/erfgoed.jpg)"
-              class="card-header align-items-flex-end"><b>About the Forest</b></div>
+              class="card-header align-items-flex-end"><b>Erfgoed</b></div>
             </a>
             <div class="card-content card-content-padding">
-              <p>Discover here all about the Sonian forest! Learn about the 6 gates and learn the rich history of the forest.</p>
+              <p>Op zoek naar een interessante plaats? Ontdek hier al het natuurlijk en historisch erfgoed dat het Zoniënwoud rijk is.</p>
             </div>
             <div class="card-footer center">
                 <a href="#" class="link"> </a>
-                <a href="/about-eng/" class="link"><i class="icon f7-icons ios-only">search</i> <i class="icon f7-icons ios-only icon-ios-fill">search</i> <i class="icon material-icons md-only">search</i></a>
+                <a href="/erfgoed-nl/" class="link">
+                  <i class="icon f7-icons if-not-md">search</i>
+                  <i class="icon material-icons md-only">search</i>
+                </a>
                 <a href="#" class="link"> </a>
             </div>
           </div>
-        -->
-
+          -->
+      <div class="list media-list">
+        <ul>
+          <li>
+            <a href="/erfgoed-eng/" class="item-link item-content">
+              <div class="item-media">
+                <img src=".\img/erfgoed.jpg" width="80" />
+              </div>
+              <div class="item-inner">
+                <div class="item-title-row">
+                  <div class="item-title">Heritage</div>
+                </div>
+                <div class="item-text">
+                  Here you will find more information about the heritage.
+                </div>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a href="/faunaFlora-eng/" class="item-link item-content">
+              <div class="item-media">
+                <img src=".\img/FaunaFlora.jpg" width="80" />
+              </div>
+              <div class="item-inner">
+                <div class="item-title-row">
+                  <div class="item-title">Fauna & Flora</div>
+                </div>
+                <div class="item-text">
+                  Here you will find more information about the Fauna & Flora in the Sonian Forest.
+                </div>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a href="/toegangspoorten-eng/" class="item-link item-content">
+              <div class="item-media">
+                <img src=".\img/toegangspoort.jpeg" width="80" />
+              </div>
+              <div class="item-inner">
+                <div class="item-title-row">
+                  <div class="item-title">
+                    Entrance gates
+                  </div>
+                </div>
+                <div class="item-text">
+                  Here you will find more information about the Gates in the Sonian Forest.
+                </div>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a href="/about-eng/" class="item-link item-content">
+              <div class="item-media">
+                <img src=".\img/AboutTheForest.jpg" width="80" />
+              </div>
+              <div class="item-inner">
+                <div class="item-title-row">
+                  <div class="item-title">About the Forest.</div>
+                </div>
+                <div class="item-text">
+                  Discover everything about the Sonian Forest here!
+                </div>
+              </div>
+            </a>
+          </li>
+        </ul>
+      </div>
+      
+         
+      <!--    
+      <div class="card demo-card-header-pic">
+        <a href="#">
+        <div style="background-image:url(\img/erfgoed.jpg)"
+          class="card-header align-items-flex-end"><b>Over het Woud</b></div>
+        </a>
+        <div class="card-content card-content-padding">
+          <p>Ontdek hier alles over het Zoniënwoud! Maak kennis met de 6 toegangspoorten en leer de rijke geschiedenis van het woud.</p>
+        </div>
+        <div class="card-footer center">
+            <a href="#" class="link"> </a>
+            <a href="/about-nl/" class="link">
+              <i class="icon f7-icons if-not-md">search</i>
+              <i class="icon material-icons md-only">search</i>
+            </a>
+            <a href="#" class="link"> </a>
+        </div>
+      </div>
+      -->
+        <!-- Code voor de popup -->
+        <div class="popup popup-melding">
+          <div class="view">
+            <div class="page">
+              <div class="page-content">
+                <a class="link popup-close"><img src=".\img/close-icon.png"></a>
+                <div class="Overkoepelend">
+                  <div class="titelMeldProbleem">Report a problem</div>
+                  <div class="bovenkant">
+                    <div class="binnenbovenkant">
+                      <div class="dropdowndiv">
+                        <span class="custom-dropdown-second big-2 probleemdropdown">
+                          <select>
+                            <option>Feedback</option>
+                            <option>Time</option>
+                          </select>
+                        </span>
+                      </div>
+                      <div class="titeldiv">
+                        <label class="titel">Titel: &nbsp;</label>
+                        <input type="text" class="titelInput" id="titelInput" placeholder="typ hier een titel" />
+                      </div>
+                    </div>
+                    <div class="imagediv">
+                      <img id="uploadimage" src=".\img/stockAfbeelding.jpg" onclick="test()">
+                      <input type="file" accept="image/*" id="cameraInput" onchange="readURL(this);">
+                    </div>
+                  </div>
+                  <div class="midden">
+                    <label>Description:</label>
+                    <textarea placeholder="Bio" id="bescrhijving" placeholder="textarea" rows="16" cols="50" style="background-color:white; width: 95%;"></textarea>
+                  </div>
+                  <hr class="hr">
+                  <div class="onderkant">
+                    <div class="checkboxdiv">
+                      <input  type="checkbox" name="optiona" id="opta" class="checkbox" checked />
+                      <span class="textcheckbox">
+                        Share location?
+                        <i style="font-size: 20px" class="icon f7-icons icon-tooltip if-not-md tooltip-ENGEncy"><img src=".\img/tooltip.png" style="height: 100%;width: 100%;"></i>
+                        <i style="font-size: 20px" class="icon material-icons icon-tooltip if-md tooltip-ENGEncy"><img src=".\img/tooltip.png"style="height: 100%;width: 100%;"></i>
+                      </span>
+                    </div>
+                    <div class="onderbutton">
+                      <a href="#" class="button button-large button-fill probleemButton" onclick="MeldProbleem()">
+                        <span>Send</span>
+                        </a>
+                    </div>
+                  </div>
+                  <!--<div class="">
+                <span class="custom-dropdown-second big-2 probleemdropdown">
+                  <select>    
+                      <option>Feedback</option>
+                      <option>Tijd</option>  
+                  </select>
+                </span> 
+              </div>
+              <div class=""> 
+                <label class="titel">Titel: &nbsp;</label>
+                  <input type="text" class="titel titelInput" placeholder="typ hier een titel"/>
+                
+              </div>
+              <div class="">
+                <input type="file" accept="image/*" capture="camera" id="cameraInput">
+                <img id="uploadimage" style="width: 50%; height: 50%;">
+              </div>
+              <div class="">
+                <label>Beschrijving:</label>
+                <textarea class="resizable" placeholder="Bio" placeholder="textarea" rows="8" cols="50"></textarea>
+              </div>
+              <div class="">
+                <hr class="hritem">
+                <div class="checkboxdiv">
+                  <input  type="checkbox" name="optiona" id="opta" checked />
+                  <span class="locatietitle">
+                    Locatie delen
+                  </span>
+                </div>
+              </div>
+              <div class="">
+                <a href="#" class="button button-large button-fill probleemButton">
+                <span>Verstuur</span>
+                </a>
+              </div>
+            -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
   </div>
 </div>

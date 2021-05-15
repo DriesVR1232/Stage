@@ -68,6 +68,14 @@ margin-top: 5%;
   height: 100%;
   overflow: hidden;
 }
+input[type=file] {
+  visibility: hidden;
+}
+#uploadimage
+{
+  height: 100%; 
+  width:90%;
+}
 .midden
 {
   background-color: #fff4f4;

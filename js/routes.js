@@ -53,15 +53,15 @@ var routes = [
     url: './pages/about-eng.html',
   },
   {
-    path: '/toegangspoort-nl/',
+    path: '/toegangspoorten-nl/',
     url: './pages/toegangspoorten-nl.html',
   },
   {
-    path: '/toegangspoort-fr/',
+    path: '/toegangspoorten-fr/',
     url: './pages/toegangspoorten-fr.html',
   },
   {
-    path: '/toegangspoort-eng/',
+    path: '/toegangspoorten-eng/',
     url: './pages/toegangspoorten-eng.html',
   },
   {

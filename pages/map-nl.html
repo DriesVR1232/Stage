@@ -5,7 +5,7 @@
       <div class="title">Kaart</div>
       <div class="right">
         <a href="#" class="tab-link tab popup-open" data-popup=".popup-melding">
-          <i class="icon f7-icons if-not-md probleemicon"><img src=".\img/informationIconZonienwoud.png"> </i>
+          <i class="icon f7-icons if-not-md probleemicon"><img src=".\img/informationIconZonienwoud.png"></i>
           <i class="icon material-icons md-only probleemicon"><img src=".\img/informationIconZonienwoud.png"></i>
         </a>
         <a class="link popover-open" href="#" data-popover=".popover-links">NL</a>
@@ -13,10 +13,10 @@
           <div class="popover-inner">
             <div class="list">
               <ul>
-                <li><a class="list-button item-link popover-close" href="/index-eng/" id="ENG"
-                    onclick="LanuageChange(this.id)">ENG</a></li>
-                <li><a class="list-button item-link popover-close" href="/index-fr/" id="FR"
-                    onclick="LanuageChange(this.id)">FR</a></li>
+                <li><a class="list-button item-link popover-close" href="/map-eng/" id="ENG"
+                    onclick="LanuageChange(this.id), Kaart()">ENG</a></li>
+                <li><a class="list-button item-link popover-close" href="/map-fr/" id="FR"
+                    onclick="LanuageChange(this.id),Kaart()">FR</a></li>
               </ul>
             </div>
           </div>
@@ -31,42 +31,68 @@
         <i class="icon material-icons md-only">map</i>
         <span class="tabbar-label">Kaart</span>
       </a>
-      <a href="/info-nl/" class="tab-link ">
+      <a href="/info-nl/" class="tab-link " onclick="MapInitialise()">
         <i class="icon f7-icons if-not-md">doc_fill</i>
         <i class="icon material-icons md-only">description</i>
-        <span class="tabbar-label">Encyclopedy</span>
+        <span class="tabbar-label">Encyclopedie</span>
       </a>
     </div>
   </div>
   <div class="page-content">
-    <div id="mapid" style="height: 90%; width: 100%" data-tap-disabled="true"></div>
-    <a href="#" id="btnRoute" class="button button-large button-fill popup-open" data-popup=".my-popup" >
-      <span>Kies route</span>
-    </a>
-    <div id="BeforeRoute" style="display: none;">
-      <a href="#" class="col button button-raised button-round " onclick="ReverseRoute()">
-        <span>Reverse</span>
-      </a>
-      <a href="#" class="col button button-raised button-round " onclick="StartRoute()">
+    <div class="KaartDiv">
+      <div id="mapidNL" data-tap-disabled="true"></div>
+      <div class="KiesRoute KiesRouteDivNL popup-open" id="KiesRouteDiv" data-popup=".my-popup">
+        <a href="#" class="btnRoute btnRouteNL popup-open" id="btnRoute" data-popup=".my-popup" >
+          Kies route
+        </a>
+      </div>
+    </div>
+    <div id="BeforeRoute" class="BeforeRouteNL" style="display: none;">
+      <div class="RouteNaam">
+        <label id="BeforeRouteNameNL">blablablablabla</label>
+      </div>
+      <div class="CloseRoute" onclick="StopRoute()">
+        <i class="icon f7-icons if-not-md testest"><img src=".\img/XIcon.png"style='height: 70%; width: 70%; object-fit: contain'/></i>
+        <i class="icon material-icons md-only testest"><img src=".\img/XIcon.png"style='height: 70%; width: 70%; object-fit: contain'/></i>
+      </div>
+      <div onclick="StartRoute()" class="StartRoute">
         <span>Start</span>
+      </div>
+      <a href="#" onclick="ReverseRoute()" class="ReverseRoute">
+        <i class="icon f7-icons if-not-md"><img src=".\img/reverse.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
+        <i class="icon material-icons md-only"><img src=".\img/reverse.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
       </a>
     </div>
-    <div id="RouteInfo" style="display: none;">
-      <label id="RouteName"></label>
-      
-      <label id="StopRoute" onclick="StopRoute()">
-        <i class="icon f7-icons if-not-md"><img src=".\img/XIcon.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
-        <i class="icon material-icons md-only"><img src=".\img/XIcon.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
-      </label>
+    <div id="RouteInfo" class="RouteInfoNL" style="display: none;">
+      <div class="RouteNaam">
+        <label class="DuringRouteNameNL" id="DuringRouteNameNL">faaafaaafaaafaaa</label>
+      </div>
+      <div class="CloseRoute" onclick="StopRoute()">
+        <i class="icon f7-icons if-not-md testest"><img src=".\img/XIcon.png"style='height: 70%; width: 70%; object-fit: contain'/></i>
+        <i class="icon material-icons md-only testest"><img src=".\img/XIcon.png"style='height: 70%; width: 70%; object-fit: contain'/></i>
+      </div>
       
       <br>
-      <i class="icon f7-icons if-not-md"><img src=".\img/distance.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
-      <i class="icon material-icons md-only"><img src=".\img/distance.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
-      <label>Afgelegde afstand: <label id="RouteAfgelegdeAfstand"></label>/ <label id="RouteTotaleAfstand"></label></label>
+      <i class="icon f7-icons if-not-md AfgelegeAfstand"><img src=".\img/distance.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
+      <i class="icon material-icons md-only AfgelegeAfstand"><img src=".\img/distance.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
+      <div class="AfstandEnTijd">
+        <p class="AfgelegeAfstandText">
+            Afgelegde afstand:
+          <label id="RouteAfgelegdeAfstand"></label>/
+          <label id="RouteTotaleAfstand"></label>
+        </p> 
+      </div>
       <br>
-      <i class="icon f7-icons if-not-md"><img src=".\img/timerIcon.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
-      <i class="icon material-icons md-only"><img src=".\img/timerIcon.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
-      <label>Resterende tijd: <label id="RouteResterendeTijd"></label>min</label>
+      <i class="icon f7-icons if-not-md ResterendeDuur"><img src=".\img/timerIcon.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
+      <i class="icon material-icons md-only ResterendeDuur"><img src=".\img/timerIcon.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
+      <div class="AfstandEnTijd">
+        <p class="AfgelegeAfstandText">
+          Resterende tijd: 
+          <label id="RouteResterendeTijd">
+          </label>
+          min
+        </p>
+      </div>
     </div>
     <!-- Code voor de popup -->
     <div class="popup my-popup">
@@ -96,21 +122,21 @@
             </span>
             <div class="toolbar tabbar-labels toolbar-bottom csstoolbar">
               <div class="toolbar-inner csstoolbarinner">
-                <a href="#tab-wandel" class="tab-link tab-link-active soort-wandel" id="0 wandel"
+                <a href="#tab-wandel" class="tab-link tab-link-active soort-wandelNL" id="0 wandel"
                   onclick="routeDivVullen(this.id)">
                   <i class="icon f7-icons if-not-md "><img src=".\img/hikerIconWhite.png" class="afbeelding"> </i>
                   <i class="icon material-icons md-only "><img src=".\img/hikerIconWhite.png" class="afbeelding"></i>
                 </a>
-                <a href="#tab-fiets" class="tab-link soort-wandel" id="1 fiets" onclick="routeDivVullen(this.id)">
+                <a href="#tab-fiets" class="tab-link soort-wandelNL" id="1 fiets" onclick="routeDivVullen(this.id)">
                   <i class="icon f7-icons if-not-md "><img src=".\img/BicycleIconWhite.png" class="afbeelding"></i>
                   <i class="icon material-icons md-only "><img src=".\img/BicycleIconWhite.png" class="afbeelding"></i>
                 </a>
-                <a href="#tab-paard" class="tab-link soort-wandel" id="2 paard" onclick="routeDivVullen(this.id)">
+                <a href="#tab-paard" class="tab-link soort-wandelNL" id="2 paard" onclick="routeDivVullen(this.id)">
                   <i class="icon f7-icons if-not-md "><img src=".\img/HorseRiderIconWhite.png" class="afbeelding"></i>
                   <i class="icon material-icons md-only "><img src=".\img/HorseRiderIconWhite.png"
                       class="afbeelding"></i>
                 </a>
-                <a href="#tab-rolstoel" class="tab-link soort-wandel" id="3 rolstoel" onclick="routeDivVullen(this.id)">
+                <a href="#tab-rolstoel" class="tab-link soort-wandelNL" id="3 rolstoel" onclick="routeDivVullen(this.id)">
                   <i class="icon f7-icons if-not-md "><img src=".\img/DisabledPersonIcon.png" class="afbeelding"></i>
                   <i class="icon material-icons md-only "><img src=".\img/DisabledPersonIcon.png"
                       class="afbeelding"></i>
@@ -119,7 +145,7 @@
             </div>
             <div class="tabs">
               <div class="page-content tab tab-active">
-                <div class="block" id="tab-route">
+                <div class="block RouteContent" id="tab-routeNL">
                   <p><b>Tab 1 content</b></p>
                 </div>
               </div>
@@ -169,7 +195,7 @@
                   </div>
                   <div class="titeldiv">
                     <label class="titel">Titel: &nbsp;</label>
-                    <input type="text" class="titelInput" placeholder="typ hier een titel" />
+                    <input type="text" class="titelInput" id="titelInput" placeholder="typ hier een titel" />
                   </div>
                 </div>
                 <div class="imagediv">
@@ -179,7 +205,7 @@
               </div>
               <div class="midden">
                 <label>Beschrijving:</label>
-                <textarea placeholder="Bio" placeholder="textarea" rows="16" cols="50" style="background-color:white; width: 95%;"></textarea>
+                <textarea placeholder="Bio" id="bescrhijving" placeholder="textarea" rows="16" cols="50" style="background-color:white; width: 95%;"></textarea>
               </div>
               <hr class="hr">
               <div class="onderkant">
@@ -187,10 +213,12 @@
                   <input  type="checkbox" name="optiona" id="opta" class="checkbox" checked />
                   <span class="textcheckbox">
                     Locatie delen?
+                    <i style="font-size: 20px" class="icon f7-icons icon-tooltip if-not-md tooltip-NLKaart"><img src=".\img/tooltip.png" style="height: 100%;width: 100%;"></i>
+                    <i style="font-size: 20px" class="icon material-icons icon-tooltip if-md tooltip-NLKaart"><img src=".\img/tooltip.png"style="height: 100%;width: 100%;"></i>
                   </span>
                 </div>
                 <div class="onderbutton">
-                  <a href="#" class="button button-large button-fill probleemButton">
+                  <a href="#" class="button button-large button-fill probleemButton" onclick="MeldProbleem()">
                     <span>Verstuur</span>
                     </a>
                 </div>

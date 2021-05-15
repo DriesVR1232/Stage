@@ -7,6 +7,10 @@ if (document.location.search.indexOf('theme=') >= 0)
   theme = document.location.search.split('theme=')[1].split('&')[0];
 }
 localStorage.setItem("firebaseScriptsLoaded","false");
+if(localStorage.getItem("GeselecteerdeTaal")== undefined)
+{
+  localStorage.setItem("GeselecteerdeTaal","NL")
+}
 try{
   // Init App
   var app = new Framework7(
@@ -26,7 +30,19 @@ try{
       mdCenterTitle: true
     },
   });
-  
+  if(localStorage.getItem("GeselecteerdeTaal") == "NL")
+  {
+    app.views.main.router.navigate("/");
+  }
+  else if(localStorage.getItem("GeselecteerdeTaal") == "FR")
+  {
+    app.views.main.router.navigate("/index-fr/");
+  }
+  else if(localStorage.getItem("GeselecteerdeTaal") == "ENG")
+  {
+    console.log("frans geselecteerd");
+    app.views.main.router.navigate("/index-eng/");
+  }
   localStorage.setItem("Framework7Initialised", "true");
   localStorage.setItem("Reverse","false");
   localStorage.setItem("RouteStart","false");
@@ -35,6 +51,11 @@ catch(err)
 {
   console.log(" initialize framework7: " + err);
 } 
+document.addEventListener("backbutton", onBackKeyDown, false);
+
+function onBackKeyDown() {
+    // Handle the back button
+}
 
 /*localforage.getItem('HeritageDeHangar', function(err, value) 
 {
@@ -44,16 +65,17 @@ catch(err)
 });
 */
 /*firebase initialisation*/
-var firebaseConfig, database, storage, mymap, polylineCoords, lat, long, polyline, coords;
+var firebaseConfig, database, storage, mymap, polylineCoords, lat, long, polyline, coords, current_position, current_accuracy;;
 var polylineLines = [];
 var polylineNames = [];
 var totaldistance = 0;
-var TotaleDuurRoute,ResterendeDuurRoute,GekozenRouteDistance, GekozenRouteType,DuurPerPolyline, greenIcon, StartMarker,HeritageIcon,aantalHeritages;
+var TotaleDuurRoute,ResterendeDuurRoute,GekozenRouteDistance, GekozenRouteType,DuurPerPolyline, greenIcon,StartMarker,HeritageIcon,GateIcon, publicTransportIcon, parkingIcon, horecaIcon, fietsParkingIcon, aantalHeritages;
 var time = 0;
 var HeritageNames = [];
 var heritageLayer = [];
 var request,db;
 var HeritageObjects = [];
+var hasNumber = /\d/;
 if(localStorage.getItem("indexedDB") == undefined)
 {
   // Let us open our database
@@ -75,18 +97,50 @@ if(localStorage.getItem("indexedDB") == undefined)
     db.createObjectStore("Heritage_images",{keyPath : "Title"});
   };
 }
-greenIcon = L.icon(
-  {
-    iconUrl: '\img/start-flag.png',
-    iconSize:     [30, 85], // size of the icon
-    iconAnchor:   [0, 85], // point of the icon which will correspond to marker's location
-  });
+StartIcon = L.icon(
+{
+  iconUrl: '\img/start-flag.png',
+  iconSize:     [30, 85], // size of the icon
+  iconAnchor:   [0, 85], // point of the icon which will correspond to marker's location
+});
 HeritageIcon = L.icon(
-  {
-    iconUrl: '\img/building.png',
-    iconSize:     [25, 50], // size of the icon
-    iconAnchor:   [0, 50], // point of the icon which will correspond to marker's location
-  });
+{
+  iconUrl: '\img/building.png',
+  iconSize:     [20, 30], // size of the icon
+  iconAnchor:   [0, 30], // point of the icon which will correspond to marker's location
+});
+  
+GateIcon = L.icon(
+{
+  iconUrl: '\img/gate.png',
+  iconSize:     [20, 30], // size of the icon
+  iconAnchor:   [10, 30], // point of the icon which will correspond to marker's location
+});
+publicTransportIcon = L.icon(
+{
+  iconUrl: '\img/publicTransport.png',
+  iconSize:     [20, 30], // size of the icon
+  iconAnchor:   [10, 30], // point of the icon which will correspond to marker's location
+});
+parkingIcon = L.icon(
+{
+  iconUrl: '\img/parking.png',
+  iconSize:     [20, 30], // size of the icon
+  iconAnchor:   [10, 30], // point of the icon which will correspond to marker's location
+});
+horecaIcon = L.icon(
+{
+  iconUrl: '\img/horeca.png',
+  iconSize:     [20, 30], // size of the icon
+  iconAnchor:   [10, 30], // point of the icon which will correspond to marker's location
+});
+fietsParkingIcon = L.icon(
+{
+  iconUrl: '\img/fietsParking.png',
+  iconSize:     [30, 40], // size of the icon
+  iconAnchor:   [10, 40], // point of the icon which will correspond to marker's location
+});
+
 
 app.dialog.preloader();
 Setup();
@@ -94,6 +148,7 @@ Setup();
 function Setup()
 {
   localStorage.setItem("MapNLInitialised","false");
+  localStorage.setItem("MapFRInitialised","false");
   localStorage.removeItem("polyline");
   if(localStorage.getItem("reloaded") == null)
   {
@@ -268,16 +323,34 @@ function AantalAssets()
         refHeritage.on("value", function(heritagenapshot) 
         {
           x = x + heritagenapshot.numChildren();
-          localStorage.setItem("aantalAssets",x);
+          var refPublicTransport = firebase.database().ref('flamelink/environments/production/content/publicTransport/en-US');
+          refPublicTransport.on("value", function(publicTransportSnapshot) 
+          {
+            x = x + publicTransportSnapshot.numChildren();
+            var refParkings = firebase.database().ref('flamelink/environments/production/content/parkings/en-US');
+            refParkings.on("value", function(parkingsSnapshot) 
+            {
+              x = x + parkingsSnapshot.numChildren();
+              var refHoreca = firebase.database().ref('flamelink/environments/production/content/horeca/en-US');
+              refHoreca.on("value", function(horecaSnapshot) 
+              {
+                x = x + horecaSnapshot.numChildren();
+                var refBikeParkings = firebase.database().ref('flamelink/environments/production/content/bikeParkings/en-US');
+                refBikeParkings.on("value", function(BikeParkingsSnapshot) 
+                {
+                  x = x + BikeParkingsSnapshot.numChildren();
+                  localStorage.setItem("aantalAssets",x);
+                });
+              });
+            });
+          });
         });
-        
-        //alert("aantal assets:" + x);
       });
     });
   }
   catch(err) 
   {
-    alert("aantal assets: " + err.message);
+    console.log("aantal assets: " + err.message);
     location.reload();
   }
 }
@@ -360,8 +433,7 @@ function InizializeFirebase()
     }
   }
 }
-var canvas = document.getElementById("heritageImage");
-context = canvas.getContext('2d');
+
 function infoOphalen()
 {
   //addScripts();
@@ -487,6 +559,17 @@ function infoOphalen()
               var url = value.routePoints;
               try
               {
+                /*
+                fetch(
+                  url,
+                  { method: 'GET' }
+                )
+                .then( response => response)
+                .then( json => console.log(json) )
+                .catch( error => console.log('error:', error) );
+                */
+
+
                 /* set up async GET request */
                 var req = new XMLHttpRequest();
                 req.open("GET", url, true);
@@ -494,11 +577,20 @@ function infoOphalen()
                 
                 req.onload = function(e) 
                 {
-                  var data = new Uint8Array(req.response);
-                  var workbook = XLSX.read(data, {type:"array"});
-                
-                  /* DO SOMETHING WITH workbook HERE */
-                  var numberOfSheets = workbook.SheetNames.length;
+                  try
+                  {
+                    var data = new Uint8Array(req.response);
+                    var workbook = XLSX.read(data, {type:"array"});
+                 
+                    /* DO SOMETHING WITH workbook HERE */
+                    var numberOfSheets = workbook.SheetNames.length;
+                  }
+                  catch(err)
+                  {
+                    alert("excel sheets error" + err);
+                  }
+                 
+
                   for (var i = 0; i < numberOfSheets; i++) 
                   {
                     //console.log("ingeladen route: " + value.uniqueName);  
@@ -564,9 +656,10 @@ function infoOphalen()
         try
         {
           var refHeritage = firebase.database().ref('flamelink/environments/production/content/heritage/en-US');
-          firebase.database().ref(refHeritage).on('value', function(snapshot)
+          firebase.database().ref(refHeritage).once('value', function(snapshot)
           {
             console.log("aantal heritages : " + snapshot.numChildren());
+            
             aantalHeritages = snapshot.numChildren();
             //alert("in de firebase.on voor laatste assets");
             snapshot.forEach(function(childSnapshot)  
@@ -603,7 +696,8 @@ function infoOphalen()
               
               if(value.imagename == "")
               {
-                console.log("leeg");
+
+                console.log("deze heritage is leeg= ");
               }
               else
               {
@@ -644,7 +738,183 @@ function infoOphalen()
         {
           console.log("heritage error:" + err);
         }
-          //---------------------------------------------------------------------------------------------------
+        //----------------------------Data over publicTransport ophalen-------------------------------------------------
+        var publicTransport = [];
+        try
+        {
+          //alert("gates ophalen");
+          var refPublicTransport = firebase.database().ref('flamelink/environments/production/content/publicTransport/en-US');
+          refPublicTransport.on("value", function(publicTransportSnapshot) 
+          {
+            if(publicTransportSnapshot.exists()) 
+            {
+              //console.log("aantal children : " + snapshot.numChildren());
+              publicTransportSnapshot.forEach(function(childSnapshot)  
+              {
+                var childData = childSnapshot.val();
+                //console.log(childData);
+                for (var key of Object.keys(childData)) 
+                {
+                  if(key == "__meta__")
+                  {
+                    delete childData[key];
+                  }
+                }
+                publicTransport.push(childData);
+                //console.log(childData);
+                progress = progress + berekenProgress;
+                localStorage.setItem("progress",progress);
+                //console.log("gates progress:" + progress);
+                dialog.setProgress(localStorage.getItem("progress"));
+                geladenAssets = geladenAssets + 1;
+                localStorage.setItem("geladenAssets", geladenAssets);
+                dialog.setText("Asset " + geladenAssets + " of " + aantalAssets+ " loaded");
+              });
+              localStorage.setItem("publicTransport",JSON.stringify(publicTransport));
+            }
+            else 
+            {
+              console.log("No data available");
+            } 
+          });
+        }
+        catch(err)
+        {
+          console.log("publicTransport error: " + err);
+        }
+        //----------------------------Data over Parkings ophalen-------------------------------------------------
+        var Parkings = [];
+        try
+        {
+          //alert("gates ophalen");
+          var refParkings = firebase.database().ref('flamelink/environments/production/content/parkings/en-US');
+          refParkings.on("value", function(ParkingsSnapshot) 
+          {
+            if(ParkingsSnapshot.exists()) 
+            {
+              //console.log("aantal children : " + snapshot.numChildren());
+              ParkingsSnapshot.forEach(function(childSnapshot)  
+              {
+                var childData = childSnapshot.val();
+                //console.log(childData);
+                for (var key of Object.keys(childData)) 
+                {
+                  if(key == "__meta__")
+                  {
+                    delete childData[key];
+                  }
+                }
+                Parkings.push(childData);
+                //console.log(childData);
+                progress = progress + berekenProgress;
+                localStorage.setItem("progress",progress);
+                //console.log("gates progress:" + progress);
+                dialog.setProgress(localStorage.getItem("progress"));
+                geladenAssets = geladenAssets + 1;
+                localStorage.setItem("geladenAssets", geladenAssets);
+                dialog.setText("Asset " + geladenAssets + " of " + aantalAssets+ " loaded");
+              });
+              localStorage.setItem("Parkings",JSON.stringify(Parkings));
+            }
+            else 
+            {
+              console.log("No data available");
+            } 
+          });
+        }
+        catch(err)
+        {
+          console.log("Parkings error: " + err);
+        }
+        //----------------------------Data over Horeca ophalen-------------------------------------------------
+        var Horeca = [];
+        try
+        {
+          //alert("gates ophalen");
+          var refHoreca = firebase.database().ref('flamelink/environments/production/content/horeca/en-US');
+          refHoreca.on("value", function(HorecaSnapshot) 
+          {
+            if(HorecaSnapshot.exists()) 
+            {
+              //console.log("aantal children : " + snapshot.numChildren());
+              HorecaSnapshot.forEach(function(childSnapshot)  
+              {
+                var childData = childSnapshot.val();
+                //console.log(childData);
+                for (var key of Object.keys(childData)) 
+                {
+                  if(key == "__meta__")
+                  {
+                    delete childData[key];
+                  }
+                }
+                Horeca.push(childData);
+                //console.log(childData);
+                progress = progress + berekenProgress;
+                localStorage.setItem("progress",progress);
+                //console.log("gates progress:" + progress);
+                dialog.setProgress(localStorage.getItem("progress"));
+                geladenAssets = geladenAssets + 1;
+                localStorage.setItem("geladenAssets", geladenAssets);
+                dialog.setText("Asset " + geladenAssets + " of " + aantalAssets+ " loaded");
+              });
+              localStorage.setItem("Horeca",JSON.stringify(Horeca));
+            }
+            else 
+            {
+              console.log("No data available");
+            } 
+          });
+        }
+        catch(err)
+        {
+          console.log("Horeca error: " + err);
+        }
+        //----------------------------Data over BikeParkings ophalen-------------------------------------------------
+        var BikeParkings = [];
+        try
+        {
+          //alert("gates ophalen");
+          var refHoreca = firebase.database().ref('flamelink/environments/production/content/bikeParkings/en-US');
+          refHoreca.on("value", function(HorecaSnapshot) 
+          {
+            if(HorecaSnapshot.exists()) 
+            {
+              //console.log("aantal children : " + snapshot.numChildren());
+              HorecaSnapshot.forEach(function(childSnapshot)  
+              {
+                var childData = childSnapshot.val();
+                //console.log(childData);
+                for (var key of Object.keys(childData)) 
+                {
+                  if(key == "__meta__")
+                  {
+                    delete childData[key];
+                  }
+                }
+                BikeParkings.push(childData);
+                //console.log(childData);
+                progress = progress + berekenProgress;
+                localStorage.setItem("progress",progress);
+                //console.log("gates progress:" + progress);
+                dialog.setProgress(localStorage.getItem("progress"));
+                geladenAssets = geladenAssets + 1;
+                localStorage.setItem("geladenAssets", geladenAssets);
+                dialog.setText("Asset " + geladenAssets + " of " + aantalAssets+ " loaded");
+              });
+              localStorage.setItem("BikeParkings",JSON.stringify(BikeParkings));
+            }
+            else 
+            {
+              console.log("No data available");
+            } 
+          });
+        }
+        catch(err)
+        {
+          console.log("Horeca error: " + err);
+        }
+        //---------------------------------------------------------------------------------------------------
       }
       else
       {
@@ -711,8 +981,6 @@ var heritageInterval = setInterval( function()
   }
 },100);
 
-
-
 function addData()
 {
   var transaction = db.transaction("Heritage_images", "readwrite");
@@ -720,7 +988,7 @@ function addData()
   for(var i = 0; i< aantalHeritages; i++)
   {
     var value = HeritageObjects[i];
-    console.log("HeritageObjects[i] = " + JSON.stringify(HeritageObjects[i]));
+    //console.log("HeritageObjects[i] = " + JSON.stringify(HeritageObjects[i]));
     var note = 
     {
     Title: HeritageNames[i],
@@ -743,37 +1011,46 @@ function addData()
   heritageInfo.add(note);
   */
 
-  console.log("db = " + db);
+  //console.log("db = " + db);
 
 }
 
-function Kaart(routePoints)
+function Kaart()
 {
-  var mapLoad = "";
-  var routeCoordinaten = routePoints;
-  if(localStorage.getItem("MapNLInitialised") == "false")
+  if(localStorage.getItem("GeselecteerdeTaal") == "NL")
   {
+
+    var mapLoad = "";
     //mymap.remove();
     mapLoad = "\map/{z}/{x}/{y}.png";
     var mapElementInterval = setInterval(function()
     {  
-      var elementExists = document.getElementById("mapid");
+      var elementExists = document.getElementById("mapidNL");
       if(elementExists != null) 
       {
+        try
+        {
+          mymap.remove();
+          console.log("map removed");
+        }
+        catch(err)
+        {
+          console.log(err);
+        }
         clearInterval(mapElementInterval);
         localStorage.setItem("MapNLInitialised","true");
         console.log("element bestaat");
         //----------------------------------------------------------------------------------------------
         //var mapboxUrl = "https://api.mapbox.com/styles/v1/groenestapstenenvzw/cjsa2ljft5tgs1ftdjcqr09mo/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZ3JvZW5lc3RhcHN0ZW5lbnZ6dyIsImEiOiJjanMwNzNiN2MwMDhmNGFrdm9pZTlidzhzIn0.9eaZs-fbZSyygtfnyqUEIQ";
         /*leaflet code*/
-        mymap = L.map('mapid',
+        mymap = L.map('mapidNL',
         {
-          /*maxBounds: [
+          maxBounds: [
               //south west
               [50.680033, 4.313562],
               //north east
               [50.877788, 4.605838]
-            ] */
+            ] 
           }).setView([50.791487, 4.448756], 13);
         L.tileLayer(mapLoad, {
         //L.tileLayer('https://api.mapbox.com/styles/v1/groenestapstenenvzw/cjsa2ljft5tgs1ftdjcqr09mo/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZ3JvZW5lc3RhcHN0ZW5lbnZ6dyIsImEiOiJjanMwNzNiN2MwMDhmNGFrdm9pZTlidzhzIn0.9eaZs-fbZSyygtfnyqUEIQ', {
@@ -790,13 +1067,13 @@ function Kaart(routePoints)
           maxZoom: 16, 
           watch:true
         });
-        var layerGroup = L.layerGroup();
+        var heritageLayerGroup = L.layerGroup();
         //console.log(coords);
         var DBOpenRequest = window.indexedDB.open("Heritage", 4);
         DBOpenRequest.onsuccess = function(event) 
         {
           db = DBOpenRequest.result;
-          console.log("db = " + db);
+          //console.log("db = " + db);
           var tx = db.transaction("Heritage_images","readonly");
           var opgehaaldeHeritage = tx.objectStore("Heritage_images");
           var request = opgehaaldeHeritage.getAll();
@@ -805,7 +1082,7 @@ function Kaart(routePoints)
             // Extract all the objects from the event.target.result
           
             var cursor = evt.target.result;
-            console.log(cursor[1]);
+            //console.log(cursor[1].value.imagename);
             for(var i = 0; i< cursor.length;i++)
             {
               var boomtestcontent =`
@@ -821,18 +1098,101 @@ function Kaart(routePoints)
               </div>
               `;
               var marker = new L.marker([cursor[i].value.latitude, cursor[i].value.longitude], {icon: HeritageIcon}).bindPopup(boomtestcontent);
-              layerGroup.addLayer(marker);
+              heritageLayerGroup.addLayer(marker);
             }
-            var overlay = 
-            {
-              'Heritage': layerGroup,
-            }; 
+            
             L.control.layers(null, overlay).addTo(mymap);
             
             //console.log("Heritage info = " + JSON.stringify(cursor.value,null,2));
             //cursor.continue();
           }
         }
+        var gatesLayerGroup = L.layerGroup();
+        var gatesInfo = JSON.parse(localStorage.getItem("Gates"));
+        for(var i = 0; i<gatesInfo.length; i++)
+        {
+          var heritageContent =`
+              
+                <p>` + gatesInfo[i].name.nl +`</p>
+                <p>` + gatesInfo[i].description.nl +`</p>
+              `;
+          //console.log("Gate " + [i] + "= " + JSON.stringify(gatesInfo[i],null,2));
+          var marker = new L.circle([gatesInfo[i].latitude, gatesInfo[i].longitude], 
+            {
+              color: "green",
+              icon: HeritageIcon,
+              fillOpacity : 0,
+              radius: 500
+          }).bindPopup(heritageContent);
+          //var gateMarker = new L.marker([gatesInfo[i].latitude, gatesInfo[i].longitude], {icon: GateIcon}).bindPopup(heritageContent);
+          /*-----------------------code voor tooltip in het midden van de cirkel
+          var text = L.tooltip(
+            {
+              permanent: true,
+              direction: 'center',
+              className: 'text'
+            })
+          .setContent(gatesInfo[i].name.nl)
+          .setLatLng([gatesInfo[i].latitude, gatesInfo[i].longitude]);
+          gatesLayerGroup.addLayer(text);
+          */
+          gatesLayerGroup.addLayer(marker);
+        }
+
+        var publicTransportLayerGroup = L.layerGroup();
+        var publicTransportInfo = JSON.parse(localStorage.getItem("publicTransport"));
+        for(var i = 0; i<publicTransportInfo.length; i++)
+        {
+          var publicTransportInfoContent =`
+          <p>` + publicTransportInfo[i].description.nl +`</p>
+        `;
+          var publicTransportInfoMarker = new L.marker([publicTransportInfo[i].latitude, publicTransportInfo[i].longitude], {icon: publicTransportIcon}).bindPopup(publicTransportInfoContent);
+          publicTransportLayerGroup.addLayer(publicTransportInfoMarker);
+        }
+
+        var ParkingLayerGroup = L.layerGroup();
+        var ParkingInfo = JSON.parse(localStorage.getItem("Parkings"));
+        for(var i = 0; i<ParkingInfo.length; i++)
+        {
+          var ParkingInfoContent =`
+          <p>` + ParkingInfo[i].description.nl +`</p>
+        `;
+          var ParkingInfoMarker = new L.marker([ParkingInfo[i].latitude, ParkingInfo[i].longitude], {icon: parkingIcon}).bindPopup(ParkingInfoContent);
+          ParkingLayerGroup.addLayer(ParkingInfoMarker);
+        }
+        
+        var HorecaLayerGroup = L.layerGroup();
+        var HorecaInfo = JSON.parse(localStorage.getItem("Horeca"));
+        for(var i = 0; i<HorecaInfo.length; i++)
+        {
+          var HorecaInfoContent =`
+          <p>` + HorecaInfo[i].name.nl +`</p>
+        `;
+          var HorecaInfoMarker = new L.marker([HorecaInfo[i].latitude, HorecaInfo[i].longitude], {icon: horecaIcon}).bindPopup(HorecaInfoContent);
+          HorecaLayerGroup.addLayer(HorecaInfoMarker);
+        }
+
+        var BikeParkingLayerGroup = L.layerGroup();
+        var BikeParkingInfo = JSON.parse(localStorage.getItem("BikeParkings"));
+        for(var i = 0; i<BikeParkingInfo.length; i++)
+        {
+          var BikeParkingInfoContent =`
+          <p>` + BikeParkingInfo[i].name.nl +`<br>
+          ` + BikeParkingInfo[i].description.nl +`</p>
+        `;
+          var BikeParkingInfoMarker = new L.marker([BikeParkingInfo[i].latitude, BikeParkingInfo[i].longitude], {icon: fietsParkingIcon}).bindPopup(BikeParkingInfoContent);
+          BikeParkingLayerGroup.addLayer(BikeParkingInfoMarker);
+        }
+
+        var overlay = 
+        {
+          'Erfgoed': heritageLayerGroup,
+          'Poorten': gatesLayerGroup,
+          'Openbaar Vervoer' : publicTransportLayerGroup,
+          'Parkings' : ParkingLayerGroup,
+          'Horeca' : HorecaLayerGroup,
+          'Fietsen parking' : BikeParkingLayerGroup
+        }; 
 
         //----------------------------------------------------------------------------------------
       }
@@ -841,43 +1201,15 @@ function Kaart(routePoints)
         console.log("element bestaat niet");
       }
     }, 200);
-  }
-  else if(localStorage.getItem("MapNLInitialised") == "true")
-  {
-    try
-    {
-      mymap.remove();
-    }
-    catch(err)
-    {
-      console.log("verwijderen map : " + err);
-    }
-    var mapinterval = setInterval(function()
-    {
-      var mapcontainer = document.getElementById("mapid");
-      if(mapcontainer != null)
-      {
-        clearInterval(mapinterval); 
-        mymap = L.map('mapid',
-        {
-          maxBounds: [
-             //south west
-             [50.680033, 4.313562],
-             //north east
-             [50.877788, 4.605838]
-           ] 
-         }).setView([50.791487, 4.448756], 13);
-         
-      }
-    },100)
+
     /*
     var internetCheck = setInterval(function()
     {
       if(localStorage.getItem("InternetStatus") == "Online")
       {
         mapLoad = "https://api.mapbox.com/styles/v1/groenestapstenenvzw/cjsa2ljft5tgs1ftdjcqr09mo/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZ3JvZW5lc3RhcHN0ZW5lbnZ6dyIsImEiOiJjanMwNzNiN2MwMDhmNGFrdm9pZTlidzhzIn0.9eaZs-fbZSyygtfnyqUEIQ";
-       L.tileLayer(mapLoad, {
-       //L.tileLayer('https://api.mapbox.com/styles/v1/groenestapstenenvzw/cjsa2ljft5tgs1ftdjcqr09mo/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZ3JvZW5lc3RhcHN0ZW5lbnZ6dyIsImEiOiJjanMwNzNiN2MwMDhmNGFrdm9pZTlidzhzIn0.9eaZs-fbZSyygtfnyqUEIQ', {
+      L.tileLayer(mapLoad, {
+      //L.tileLayer('https://api.mapbox.com/styles/v1/groenestapstenenvzw/cjsa2ljft5tgs1ftdjcqr09mo/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZ3JvZW5lc3RhcHN0ZW5lbnZ6dyIsImEiOiJjanMwNzNiN2MwMDhmNGFrdm9pZTlidzhzIn0.9eaZs-fbZSyygtfnyqUEIQ', {
         maxZoom: 16,
         minZoom: 12,
         id: 'mapbox://styles/groenestapstenenvzw/cjsa2ljft5tgs1ftdjcqr09mo',
@@ -891,45 +1223,394 @@ function Kaart(routePoints)
       }
     }, 2000);  
     */
-    if(localStorage.getItem("RouteDrawn") =="initial")
-    {
-      localStorage.setItem("RouteDrawn","false");
-    }
-    else
-    {
-      
-      if(localStorage.getItem("RouteDrawn") == "true")
+  }
+  else if(localStorage.getItem("GeselecteerdeTaal") == "FR")
+  {
+    console.log("in franse deel");
+    var mapLoad = "";
+    console.log("in remove deel");
+    //mymap.remove();
+    mapLoad = "\map/{z}/{x}/{y}.png";
+    var mapElementInterval = setInterval(function()
+    {  
+      console.log("zoeken naar franse map id");
+      var elementExists = document.getElementById("mapidFR");
+      if(elementExists != null) 
       {
-        polyline = L.polyline(JSON.parse(localStorage.getItem("polyline"))).addTo(mymap); 
-        for(i in mymap._layers) 
+        try
         {
-          if(mymap._layers[i]._path != undefined) 
-          {
-            try 
+          mymap.remove();
+        }
+        catch(err)
+        {
+          console.log(err);
+        }
+        
+        clearInterval(mapElementInterval);
+        console.log("element bestaat");
+        //----------------------------------------------------------------------------------------------
+        //var mapboxUrl = "https://api.mapbox.com/styles/v1/groenestapstenenvzw/cjsa2ljft5tgs1ftdjcqr09mo/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZ3JvZW5lc3RhcHN0ZW5lbnZ6dyIsImEiOiJjanMwNzNiN2MwMDhmNGFrdm9pZTlidzhzIn0.9eaZs-fbZSyygtfnyqUEIQ";
+        /*leaflet code*/
+        mymap = L.map('mapidFR',
+        {
+          maxBounds: [
+              //south west
+              [50.680033, 4.313562],
+              //north east
+              [50.877788, 4.605838]
+            ] 
+          }).setView([50.791487, 4.448756], 13);
+        L.tileLayer(mapLoad, {
+        //L.tileLayer('https://api.mapbox.com/styles/v1/groenestapstenenvzw/cjsa2ljft5tgs1ftdjcqr09mo/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZ3JvZW5lc3RhcHN0ZW5lbnZ6dyIsImEiOiJjanMwNzNiN2MwMDhmNGFrdm9pZTlidzhzIn0.9eaZs-fbZSyygtfnyqUEIQ', {
+          maxZoom: 16,
+          minZoom: 11,
+          tileSize: 512,
+          zoomOffset: -1,
+        }).addTo(mymap);
+        //mymap.on('load', () => console.log(map.getCanvas().toDataURL()));
+        
+        mymap.locate(
+        {
+          setView: false, 
+          maxZoom: 16, 
+          watch:true
+        });
+        var heritageLayerGroup = L.layerGroup();
+        //console.log(coords);
+        var DBOpenRequest = window.indexedDB.open("Heritage", 4);
+        DBOpenRequest.onsuccess = function(event) 
+        {
+          db = DBOpenRequest.result;
+          //console.log("db = " + db);
+          var tx = db.transaction("Heritage_images","readonly");
+          var opgehaaldeHeritage = tx.objectStore("Heritage_images");
+          var request = opgehaaldeHeritage.getAll();
+          request.onsuccess = function(evt) 
+          {  
+            // Extract all the objects from the event.target.result
+          
+            var cursor = evt.target.result;
+            //console.log(cursor[1].value.imagename);
+            for(var i = 0; i< cursor.length;i++)
             {
-              mymap.removeLayer(mymap._layers[i]);
+              var boomtestcontent =`
+              <div class="card demo-card-header-pic">
+              <a href="/Event/">
+              <div style="background-image:url(` + cursor[i].value.imagename +`)"
+                class="card-header align-items-flex-end"></div>
+              </a>
+              <div class="card-content card-content-padding">
+                <p class="date">` + cursor[i].value.name.fr +`</p>
+                <p>` +cursor[i].value.longtext.fr +`</p>
+              </div>
+              </div>
+              `;
+              var marker = new L.marker([cursor[i].value.latitude, cursor[i].value.longitude], {icon: HeritageIcon}).bindPopup(boomtestcontent);
+              heritageLayerGroup.addLayer(marker);
             }
-            catch(e) 
-            {
-                console.log("problem with " + e + mymap._layers[i]);
-            }
+            
+            L.control.layers(null, overlay).addTo(mymap);
+            
+            //console.log("Heritage info = " + JSON.stringify(cursor.value,null,2));
+            //cursor.continue();
           }
         }
-        polyline = L.polyline(routeCoordinaten).addTo(mymap); 
-        console.log("polyline removed");
+        var gatesLayerGroup = L.layerGroup();
+        var gatesInfo = JSON.parse(localStorage.getItem("Gates"));
+        for(var i = 0; i<gatesInfo.length; i++)
+        {
+          var heritageContent =`
+              
+                <p>` + gatesInfo[i].name.fr +`</p>
+                <p>` + gatesInfo[i].description.fr +`</p>
+              `;
+          //console.log("Gate " + [i] + "= " + JSON.stringify(gatesInfo[i],null,2));
+          var marker = new L.circle([gatesInfo[i].latitude, gatesInfo[i].longitude], 
+            {
+              color: "green",
+              icon: HeritageIcon,
+              fillOpacity : 0,
+              radius: 500
+          }).bindPopup(heritageContent);
+          var gateMarker = new L.marker([gatesInfo[i].latitude, gatesInfo[i].longitude], {icon: GateIcon}).bindPopup(heritageContent);
+          /*-----------------------code voor tooltip in het midden van de cirkel
+          var text = L.tooltip(
+            {
+              permanent: true,
+              direction: 'center',
+              className: 'text'
+            })
+          .setContent(gatesInfo[i].name.nl)
+          .setLatLng([gatesInfo[i].latitude, gatesInfo[i].longitude]);
+          gatesLayerGroup.addLayer(text);
+          */
+          gatesLayerGroup.addLayer(marker);
+        }
+        var publicTransportLayerGroup = L.layerGroup();
+        var publicTransportInfo = JSON.parse(localStorage.getItem("publicTransport"));
+        for(var i = 0; i<publicTransportInfo.length; i++)
+        {
+          var publicTransportInfoContent =`
+                <p>` + publicTransportInfo[i].description.fr +`</p>
+              `;
+          var publicTransportInfoMarker = new L.marker([publicTransportInfo[i].latitude, publicTransportInfo[i].longitude], {icon: publicTransportIcon}).bindPopup(publicTransportInfoContent);
+         
+          publicTransportLayerGroup.addLayer(publicTransportInfoMarker);
+        }
+        var publicTransportLayerGroup = L.layerGroup();
+        var publicTransportInfo = JSON.parse(localStorage.getItem("publicTransport"));
+        for(var i = 0; i<publicTransportInfo.length; i++)
+        {
+          var publicTransportInfoContent =`
+          <p>` + publicTransportInfo[i].description.fr +`</p>
+        `;
+          var publicTransportInfoMarker = new L.marker([publicTransportInfo[i].latitude, publicTransportInfo[i].longitude], {icon: publicTransportIcon}).bindPopup(publicTransportInfoContent);
+          publicTransportLayerGroup.addLayer(publicTransportInfoMarker);
+        }
+
+        var ParkingLayerGroup = L.layerGroup();
+        var ParkingInfo = JSON.parse(localStorage.getItem("Parkings"));
+        for(var i = 0; i<ParkingInfo.length; i++)
+        {
+          var ParkingInfoContent =`
+          <p>` + ParkingInfo[i].description.fr +`</p>
+        `;
+          var ParkingInfoMarker = new L.marker([ParkingInfo[i].latitude, ParkingInfo[i].longitude], {icon: parkingIcon}).bindPopup(ParkingInfoContent);
+          ParkingLayerGroup.addLayer(ParkingInfoMarker);
+        }
+        
+        var HorecaLayerGroup = L.layerGroup();
+        var HorecaInfo = JSON.parse(localStorage.getItem("Horeca"));
+        for(var i = 0; i<HorecaInfo.length; i++)
+        {
+          var HorecaInfoContent =`
+          <p>` + HorecaInfo[i].name.fr +`</p>
+        `;
+          var HorecaInfoMarker = new L.marker([HorecaInfo[i].latitude, HorecaInfo[i].longitude], {icon: horecaIcon}).bindPopup(HorecaInfoContent);
+          HorecaLayerGroup.addLayer(HorecaInfoMarker);
+        }
+
+        var BikeParkingLayerGroup = L.layerGroup();
+        var BikeParkingInfo = JSON.parse(localStorage.getItem("BikeParkings"));
+        for(var i = 0; i<BikeParkingInfo.length; i++)
+        {
+          var BikeParkingInfoContent =`
+          <p>` + BikeParkingInfo[i].name.fr +`<br>
+          ` + BikeParkingInfo[i].description.fr +`</p>
+        `;
+          var BikeParkingInfoMarker = new L.marker([BikeParkingInfo[i].latitude, BikeParkingInfo[i].longitude], {icon: fietsParkingIcon}).bindPopup(BikeParkingInfoContent);
+          BikeParkingLayerGroup.addLayer(BikeParkingInfoMarker);
+        }
+        var overlay = 
+        {
+          'Patrimoine': heritageLayerGroup,
+          'Portes': gatesLayerGroup,
+          'transport public' : publicTransportLayerGroup,
+          'Parkings' : ParkingLayerGroup,
+          'Horeca' : HorecaLayerGroup,
+          'Parking vélo' : BikeParkingLayerGroup
+        }; 
+
+        //----------------------------------------------------------------------------------------
       }
       else
       {
-        if(routeCoordinaten !=null)
-        {
-          polyline = L.polyline(routeCoordinaten).addTo(mymap); 
-          localStorage.setItem("polyline",JSON.stringify(routeCoordinaten));
-          localStorage.setItem("RouteDrawn","true");
-          console.log("geen coordinates meegegeven");
-        }
-      } 
-    }
+        console.log("element bestaat niet");
+      }
+    }, 200);
+    
+
   }
+  else if(localStorage.getItem("GeselecteerdeTaal") == "ENG")
+  {
+    var mapLoad = "";
+    //mymap.remove();
+    mapLoad = "\map/{z}/{x}/{y}.png";
+    var mapElementInterval = setInterval(function()
+    {  
+      var elementExists = document.getElementById("mapidENG");
+      if(elementExists != null) 
+      {
+        try
+        {
+          mymap.remove();
+        }
+        catch(err)
+        {
+          console.log(err);
+        }
+        
+        clearInterval(mapElementInterval);
+        console.log("element bestaat");
+        //----------------------------------------------------------------------------------------------
+        //var mapboxUrl = "https://api.mapbox.com/styles/v1/groenestapstenenvzw/cjsa2ljft5tgs1ftdjcqr09mo/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZ3JvZW5lc3RhcHN0ZW5lbnZ6dyIsImEiOiJjanMwNzNiN2MwMDhmNGFrdm9pZTlidzhzIn0.9eaZs-fbZSyygtfnyqUEIQ";
+        /*leaflet code*/
+        mymap = L.map('mapidENG',
+        {
+          maxBounds: [
+              //south west
+              [50.680033, 4.313562],
+              //north east
+              [50.877788, 4.605838]
+            ] 
+          }).setView([50.791487, 4.448756], 13);
+        L.tileLayer(mapLoad, {
+        //L.tileLayer('https://api.mapbox.com/styles/v1/groenestapstenenvzw/cjsa2ljft5tgs1ftdjcqr09mo/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZ3JvZW5lc3RhcHN0ZW5lbnZ6dyIsImEiOiJjanMwNzNiN2MwMDhmNGFrdm9pZTlidzhzIn0.9eaZs-fbZSyygtfnyqUEIQ', {
+          maxZoom: 16,
+          minZoom: 11,
+          tileSize: 512,
+          zoomOffset: -1,
+        }).addTo(mymap);
+        //mymap.on('load', () => console.log(map.getCanvas().toDataURL()));
+        
+        mymap.locate(
+        {
+          setView: false, 
+          maxZoom: 16, 
+          watch:true
+        });
+        var heritageLayerGroup = L.layerGroup();
+        //console.log(coords);
+        var DBOpenRequest = window.indexedDB.open("Heritage", 4);
+        DBOpenRequest.onsuccess = function(event) 
+        {
+          db = DBOpenRequest.result;
+          //console.log("db = " + db);
+          var tx = db.transaction("Heritage_images","readonly");
+          var opgehaaldeHeritage = tx.objectStore("Heritage_images");
+          var request = opgehaaldeHeritage.getAll();
+          request.onsuccess = function(evt) 
+          {  
+            // Extract all the objects from the event.target.result
+          
+            var cursor = evt.target.result;
+            //console.log(cursor[1].value.imagename);
+            for(var i = 0; i< cursor.length;i++)
+            {
+              var boomtestcontent =`
+              <div class="card demo-card-header-pic">
+              <a href="/Event/">
+              <div style="background-image:url(` + cursor[i].value.imagename +`)"
+                class="card-header align-items-flex-end"></div>
+              </a>
+              <div class="card-content card-content-padding">
+                <p class="date">` + cursor[i].value.name.en +`</p>
+                <p>` +cursor[i].value.longtext.en +`</p>
+              </div>
+              </div>
+              `;
+              var marker = new L.marker([cursor[i].value.latitude, cursor[i].value.longitude], {icon: HeritageIcon}).bindPopup(boomtestcontent);
+              heritageLayerGroup.addLayer(marker);
+            }
+            
+            L.control.layers(null, overlay).addTo(mymap);
+            
+            //console.log("Heritage info = " + JSON.stringify(cursor.value,null,2));
+            //cursor.continue();
+          }
+        }
+        var gatesLayerGroup = L.layerGroup();
+        var gatesInfo = JSON.parse(localStorage.getItem("Gates"));
+        for(var i = 0; i<gatesInfo.length; i++)
+        {
+          var heritageContent =`
+              
+                <p>` + gatesInfo[i].name.en +`</p>
+                <p>` + gatesInfo[i].description.en +`</p>
+              `;
+          //console.log("Gate " + [i] + "= " + JSON.stringify(gatesInfo[i],null,2));
+          var marker = new L.circle([gatesInfo[i].latitude, gatesInfo[i].longitude], 
+            {
+              color: "green",
+              icon: HeritageIcon,
+              fillOpacity : 0,
+              radius: 500
+          }).bindPopup(heritageContent);
+          var gateMarker = new L.marker([gatesInfo[i].latitude, gatesInfo[i].longitude], {icon: GateIcon}).bindPopup(heritageContent);
+          /*-----------------------code voor tooltip in het midden van de cirkel
+          var text = L.tooltip(
+            {
+              permanent: true,
+              direction: 'center',
+              className: 'text'
+            })
+          .setContent(gatesInfo[i].name.nl)
+          .setLatLng([gatesInfo[i].latitude, gatesInfo[i].longitude]);
+          gatesLayerGroup.addLayer(text);
+          */
+          gatesLayerGroup.addLayer(marker);
+        }
+        var publicTransportLayerGroup = L.layerGroup();
+        var publicTransportInfo = JSON.parse(localStorage.getItem("publicTransport"));
+        for(var i = 0; i<publicTransportInfo.length; i++)
+        {
+          var publicTransportInfoContent =`
+          <p>` + publicTransportInfo[i].description.en +`</p>
+        `;
+          var publicTransportInfoMarker = new L.marker([publicTransportInfo[i].latitude, publicTransportInfo[i].longitude], {icon: publicTransportIcon}).bindPopup(publicTransportInfoContent);
+          publicTransportLayerGroup.addLayer(publicTransportInfoMarker);
+        }
+
+        var ParkingLayerGroup = L.layerGroup();
+        var ParkingInfo = JSON.parse(localStorage.getItem("Parkings"));
+        for(var i = 0; i<ParkingInfo.length; i++)
+        {
+          var ParkingInfoContent =`
+          <p>` + ParkingInfo[i].description.en +`</p>
+        `;
+          var ParkingInfoMarker = new L.marker([ParkingInfo[i].latitude, ParkingInfo[i].longitude], {icon: parkingIcon}).bindPopup(ParkingInfoContent);
+          ParkingLayerGroup.addLayer(ParkingInfoMarker);
+        }
+        
+        var HorecaLayerGroup = L.layerGroup();
+        var HorecaInfo = JSON.parse(localStorage.getItem("Horeca"));
+        for(var i = 0; i<HorecaInfo.length; i++)
+        {
+          var HorecaInfoContent =`
+          <p>` + HorecaInfo[i].name.en +`</p>
+        `;
+          var HorecaInfoMarker = new L.marker([HorecaInfo[i].latitude, HorecaInfo[i].longitude], {icon: horecaIcon}).bindPopup(HorecaInfoContent);
+          HorecaLayerGroup.addLayer(HorecaInfoMarker);
+        }
+
+        var BikeParkingLayerGroup = L.layerGroup();
+        var BikeParkingInfo = JSON.parse(localStorage.getItem("BikeParkings"));
+        for(var i = 0; i<BikeParkingInfo.length; i++)
+        {
+          var BikeParkingInfoContent =`
+          <p>` + BikeParkingInfo[i].name.en +`<br>
+          ` + BikeParkingInfo[i].description.en +`</p>
+        `;
+          var BikeParkingInfoMarker = new L.marker([BikeParkingInfo[i].latitude, BikeParkingInfo[i].longitude], {icon: fietsParkingIcon}).bindPopup(BikeParkingInfoContent);
+          BikeParkingLayerGroup.addLayer(BikeParkingInfoMarker);
+        }
+        var overlay = 
+        {
+          'Heritage': heritageLayerGroup,
+          'Gates': gatesLayerGroup,
+          'Public Transport' : publicTransportLayerGroup,
+          'Parkings' : ParkingLayerGroup,
+          'Horeca' : HorecaLayerGroup,
+          'Bike parking' : BikeParkingLayerGroup
+        }; 
+
+        //----------------------------------------------------------------------------------------
+      }
+      else
+      {
+        console.log("element bestaat niet");
+      }
+    }, 200);
+    
+
+  }
+  
+}
+function MapInitialise()
+{
+  localStorage.setItem("MapNLInitialised", "false");
+  localStorage.setItem("MapFRInitialised", "false");
+  localStorage.setItem("MapENInitialised", "false");
 }
 //HeritageLayer();
 function HeritageLayer()
@@ -997,116 +1678,354 @@ function HeritageLayer()
 function routeDivVullen(id)
 {
   var savedRoutesContent = [];
-  var x = document.getElementsByClassName("soort-wandel");
-  for (var i = 0; i < x.length; i++) 
+  if(localStorage.getItem("GeselecteerdeTaal") == "NL")
   {
-      x[i].style.backgroundColor="";
-  }
-  var elementId = id;
-  if(elementId == "0 wandel")
-  {
-    document.getElementById(elementId).style.backgroundColor = "#ffe43c";
-  }
-  else if(elementId == "1 fiets")
-  {
-    document.getElementById(elementId).style.backgroundColor = "#088c34";
-  }
-  else if(elementId == "2 paard")
-  {
-    document.getElementById(elementId).style.backgroundColor = "red";     
-  }
-  else if(elementId == "3 rolstoel")
-  {
-      document.getElementById(elementId).style.backgroundColor = "yellow";
-  }
-  
-
-  savedRoutesContent = RouteContent();
-  //savedRoutesContent = JSON.parse(localStorage.getItem())
-  var dropDownElementInterval = setInterval(function()
-  {
-    var e = document.getElementById("poortendropdown");
-    if(e != null)
+    var x = document.getElementsByClassName("soort-wandelNL");
+    for (var i = 0; i < x.length; i++) 
     {
-      clearInterval(dropDownElementInterval);
-      var geselecteerdeGate= e.options[e.selectedIndex].id;
-      var gateNaam = e.options[e.selectedIndex].value;
-      localStorage.setItem("GeselecteerdeRouteSoort",typeRoute);
-      console.log(id);
-      var typeRoute = id.replace(/\D/g,'');
-      localStorage.setItem("GeselecteerdeRouteSoort",typeRoute);
-      //console.log(gateId);
-      var tabRoute = document.getElementById("tab-route");
-      tabRoute.innerHTML = "";
-
-      var aantalRoutes = 0;
-      for(var i = 0; i < savedRoutesContent.length;i++)
+        x[i].style.backgroundColor="";
+    }
+    var elementId = id;
+    if(elementId == "0 wandel")
+    {
+      document.getElementsByClassName("soort-wandelNL")[0].style.backgroundColor = "#ffe43c";
+    }
+    else if(elementId == "1 fiets")
+    {
+      document.getElementsByClassName("soort-wandelNL")[1].style.backgroundColor = "#088c34";
+    }
+    else if(elementId == "2 paard")
+    {
+      document.getElementsByClassName("soort-wandelNL")[2].style.backgroundColor = "red";
+    }
+    else if(elementId == "3 rolstoel")
+    {
+        document.getElementsByClassName("soort-wandelNL")[3].style.backgroundColor = "yellow";
+    }
+    
+    savedRoutesContent = RouteContent();
+    var dropDownElementInterval = setInterval(function()
+    {
+      var e = document.getElementById("poortendropdown");
+      if(e != null)
       {
-        var savedRoutesContentUniqueName = savedRoutesContent[i].uniqueName;
-        savedRoutesContentUniqueName = savedRoutesContentUniqueName.replace(/\s/g, "");
-        var content = document.createElement("div");
-        var duurRoute = BerekenTijd(savedRoutesContent[i].distance, typeRoute);//-> hier een functie voor maken 
-        //console.log(duurRoute);
-        content.innerHTML = `
-        <div style=" height: 8%; width="width:100%" id=`+savedRoutesContentUniqueName+` onclick="GekozenRoute(this.id)" class ="routeChoice popup-close">
-        <div class="vl">
-        <div class="routechoicetext">
-            <p>` + savedRoutesContent[i].uniqueName + `<br>
-            ` + gateNaam + `  
-            </p>
-            <label>
-                <i class="icon f7-icons if-not-md"><img src="\img/distance.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
-                <i class="icon material-icons md-only"><img src="\img/distance.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
-                ` + savedRoutesContent[i].distance + `km
-            </label>
-            <label>
-                <i class="icon f7-icons if-not-md"><img src="\img/timerIcon.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
-                <i class="icon material-icons md-only"><img src="\img/timerIcon.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
-                <label id= " ` + savedRoutesContentUniqueName +`Duur">
-                  ` + duurRoute + `min
-                </label>
-            </label>
-            <hr>
-            </div>
-          </div>
-        </div>
-        `;
-        if(savedRoutesContent[i].gateType == geselecteerdeGate)
+        clearInterval(dropDownElementInterval);
+        var geselecteerdeGate= e.options[e.selectedIndex].id;
+        var gateNaam = e.options[e.selectedIndex].value;
+        localStorage.setItem("GeselecteerdeRouteSoort",typeRoute);
+        console.log(id);
+        var typeRoute = id.replace(/\D/g,'');
+        localStorage.setItem("GeselecteerdeRouteSoort",typeRoute);
+        //console.log(gateId);
+        var tabRoute = document.getElementById("tab-routeNL");
+        tabRoute.innerHTML = "";
+
+        var aantalRoutes = 0;
+        for(var i = 0; i < savedRoutesContent.length;i++)
         {
-          if(savedRoutesContent[i].type == typeRoute)
+          var savedRoutesContentUniqueName = savedRoutesContent[i].uniqueName;
+          savedRoutesContentUniqueName = savedRoutesContentUniqueName.replace(/\s/g, "");
+          var content = document.createElement("div");
+          var duurRoute = BerekenTijd(savedRoutesContent[i].distance, typeRoute);//-> hier een functie voor maken 
+          //console.log(duurRoute);
+          var savedRoutesContentUniqueName = savedRoutesContent[i].uniqueName;
+          savedRoutesContentUniqueName = savedRoutesContentUniqueName.replace(/\s/g, "");
+          var content = document.createElement("div");
+          var duurRoute = BerekenTijd(savedRoutesContent[i].distance, typeRoute);//-> hier een functie voor maken 
+          //console.log(duurRoute);
+            content.innerHTML = `
+            <div style=" height: 8%; width="width:100%" id=`+savedRoutesContentUniqueName+` onclick="GekozenRoute(this.id)" class ="routeChoice popup-close">
+            <div class="vl">
+            <div class="routechoicetext">
+                <p>` + savedRoutesContent[i].name.nl + `<br>
+                ` + gateNaam + `  
+                </p>
+                <label>
+                    <i class="icon f7-icons if-not-md"><img src="\img/distance.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
+                    <i class="icon material-icons md-only"><img src="\img/distance.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
+                    ` + savedRoutesContent[i].distance + `km
+                </label>
+                <label>
+                    <i class="icon f7-icons if-not-md"><img src="\img/timerIcon.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
+                    <i class="icon material-icons md-only"><img src="\img/timerIcon.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
+                    <label id= " ` + savedRoutesContentUniqueName +`Duur">
+                      ` + duurRoute + `min
+                    </label>
+                </label>
+                <hr>
+                </div>
+              </div>
+            </div>
+            `;
+          if(savedRoutesContent[i].gateType == geselecteerdeGate)
           {
-            tabRoute.appendChild(content);
-            console.log("toegevoegd");
-            var vlElement = document.getElementsByClassName("vl");
-            if(elementId == "0 wandel")
+            if(savedRoutesContent[i].type == typeRoute)
             {
-                vlElement[vlElement.length-1].style.borderLeft = "6px solid #ffe43c";
+              tabRoute.appendChild(content);
+              console.log("toegevoegd");
+              var vlElement = document.getElementsByClassName("vl");
+              if(elementId == "0 wandel")
+              {
+                  vlElement[vlElement.length-1].style.borderLeft = "6px solid #ffe43c";
+              }
+              else if(elementId == "1 fiets")
+              {
+                  vlElement[vlElement.length-1].style.borderLeft = "6px solid green";
+              }
+              else if(elementId == "2 paard")
+              {
+                  vlElement[vlElement.length-1].style.borderLeft = " 6px solid red";
+              }
+              else if(elementId == "3 rolstoel")
+              {
+                  vlElement[vlElement.length-1].style.borderLeft = " 6px solid yellow";
+              }
+              aantalRoutes ++;
             }
-            else if(elementId == "1 fiets")
-            {
-                vlElement[vlElement.length-1].style.borderLeft = "6px solid green";
-            }
-            else if(elementId == "2 paard")
-            {
-                vlElement[vlElement.length-1].style.borderLeft = " 6px solid red";
-            }
-            else if(elementId == "3 rolstoel")
-            {
-                vlElement[vlElement.length-1].style.borderLeft = " 6px solid yellow";
-            }
-            aantalRoutes ++;
           }
         }
+        console.log("aantal routes: " + aantalRoutes );
+        if(aantalRoutes == 0)
+        {
+          var empty = document.createElement('p');
+          empty.innerHTML = "Geen routes voor deze combinatie";
+          tabRoute.appendChild(empty);
+        }
       }
-      console.log("aantal routes: " + aantalRoutes );
-      if(aantalRoutes == 0)
-      {
-        var empty = document.createElement('p');
-        empty.innerHTML = "Geen routes voor deze combinatie";
-        tabRoute.appendChild(empty);
-      }
+    },200);
+  }
+  else if(localStorage.getItem("GeselecteerdeTaal") == "FR")
+  {
+    var x = document.getElementsByClassName("soort-wandelFR");
+    for (var i = 0; i < x.length; i++) 
+    {
+        x[i].style.backgroundColor="";
     }
-  },200);
+    var elementId = id;
+    if(elementId == "0 wandel")
+    {
+      document.getElementsByClassName("soort-wandelFR")[0].style.backgroundColor = "#ffe43c";
+    }
+    else if(elementId == "1 fiets")
+    {
+      document.getElementsByClassName("soort-wandelFR")[1].style.backgroundColor = "#088c34";
+    }
+    else if(elementId == "2 paard")
+    {
+      document.getElementsByClassName("soort-wandelFR")[2].style.backgroundColor = "red";
+    }
+    else if(elementId == "3 rolstoel")
+    {
+        document.getElementsByClassName("soort-wandelFR")[3].style.backgroundColor = "yellow";
+    }
+    
+    savedRoutesContent = RouteContent();
+    var dropDownElementInterval = setInterval(function()
+    {
+      var e = document.getElementById("poortendropdownFR");
+      if(e != null)
+      {
+        clearInterval(dropDownElementInterval);
+        var geselecteerdeGate= e.options[e.selectedIndex].id;
+        var gateNaam = e.options[e.selectedIndex].value;
+        localStorage.setItem("GeselecteerdeRouteSoort",typeRoute);
+        console.log(id);
+        var typeRoute = id.replace(/\D/g,'');
+        localStorage.setItem("GeselecteerdeRouteSoort",typeRoute);
+        //console.log(gateId);
+        var tabRoute = document.getElementById("tab-routeFR");
+        tabRoute.innerHTML = "";
+
+        var aantalRoutes = 0;
+        for(var i = 0; i < savedRoutesContent.length;i++)
+        {
+          var savedRoutesContentUniqueName = savedRoutesContent[i].uniqueName;
+          savedRoutesContentUniqueName = savedRoutesContentUniqueName.replace(/\s/g, "");
+          var content = document.createElement("div");
+          var duurRoute = BerekenTijd(savedRoutesContent[i].distance, typeRoute);//-> hier een functie voor maken 
+          //console.log(duurRoute);
+          var savedRoutesContentUniqueName = savedRoutesContent[i].uniqueName;
+          savedRoutesContentUniqueName = savedRoutesContentUniqueName.replace(/\s/g, "");
+          var content = document.createElement("div");
+          var duurRoute = BerekenTijd(savedRoutesContent[i].distance, typeRoute);//-> hier een functie voor maken 
+          //console.log(duurRoute);
+            content.innerHTML = `
+            <div style=" height: 8%; width="width:100%" id=`+savedRoutesContentUniqueName+` onclick="GekozenRoute(this.id)" class ="routeChoice popup-close">
+            <div class="vl">
+            <div class="routechoicetext">
+                <p>` + savedRoutesContent[i].name.fr + `<br>
+                ` + gateNaam + `  
+                </p>
+                <label>
+                    <i class="icon f7-icons if-not-md"><img src="\img/distance.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
+                    <i class="icon material-icons md-only"><img src="\img/distance.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
+                    ` + savedRoutesContent[i].distance + `km
+                </label>
+                <label>
+                    <i class="icon f7-icons if-not-md"><img src="\img/timerIcon.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
+                    <i class="icon material-icons md-only"><img src="\img/timerIcon.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
+                    <label id= " ` + savedRoutesContentUniqueName +`Duur">
+                      ` + duurRoute + `min
+                    </label>
+                </label>
+                <hr>
+                </div>
+              </div>
+            </div>
+            `;
+          if(savedRoutesContent[i].gateType == geselecteerdeGate)
+          {
+            if(savedRoutesContent[i].type == typeRoute)
+            {
+              tabRoute.appendChild(content);
+              console.log("toegevoegd");
+              var vlElement = document.getElementsByClassName("vl");
+              if(elementId == "0 wandel")
+              {
+                  vlElement[vlElement.length-1].style.borderLeft = "6px solid #ffe43c";
+              }
+              else if(elementId == "1 fiets")
+              {
+                  vlElement[vlElement.length-1].style.borderLeft = "6px solid green";
+              }
+              else if(elementId == "2 paard")
+              {
+                  vlElement[vlElement.length-1].style.borderLeft = " 6px solid red";
+              }
+              else if(elementId == "3 rolstoel")
+              {
+                  vlElement[vlElement.length-1].style.borderLeft = " 6px solid yellow";
+              }
+              aantalRoutes ++;
+            }
+          }
+        }
+        console.log("aantal routes: " + aantalRoutes );
+        if(aantalRoutes == 0)
+        {
+          var empty = document.createElement('p');
+          empty.innerHTML = "Geen routes voor deze combinatie";
+          tabRoute.appendChild(empty);
+        }
+      }
+    },200);
+  }
+  else if(localStorage.getItem("GeselecteerdeTaal") == "ENG")
+  {
+    var x = document.getElementsByClassName("soort-wandelENG");
+    for (var i = 0; i < x.length; i++) 
+    {
+        x[i].style.backgroundColor="";
+    }
+    var elementId = id;
+    if(elementId == "0 wandel")
+    {
+      document.getElementsByClassName("soort-wandelENG")[0].style.backgroundColor = "#ffe43c";
+    }
+    else if(elementId == "1 fiets")
+    {
+      document.getElementsByClassName("soort-wandelENG")[1].style.backgroundColor = "#088c34";
+    }
+    else if(elementId == "2 paard")
+    {
+      document.getElementsByClassName("soort-wandelENG")[2].style.backgroundColor = "red";
+    }
+    else if(elementId == "3 rolstoel")
+    {
+        document.getElementsByClassName("soort-wandelENG")[3].style.backgroundColor = "yellow";
+    }
+    
+    savedRoutesContent = RouteContent();
+    var dropDownElementInterval = setInterval(function()
+    {
+      var e = document.getElementById("poortendropdownENG");
+      if(e != null)
+      {
+        clearInterval(dropDownElementInterval);
+        var geselecteerdeGate= e.options[e.selectedIndex].id;
+        var gateNaam = e.options[e.selectedIndex].value;
+        localStorage.setItem("GeselecteerdeRouteSoort",typeRoute);
+        console.log(id);
+        var typeRoute = id.replace(/\D/g,'');
+        localStorage.setItem("GeselecteerdeRouteSoort",typeRoute);
+        //console.log(gateId);
+        var tabRoute = document.getElementById("tab-routeENG");
+        tabRoute.innerHTML = "";
+
+        var aantalRoutes = 0;
+        for(var i = 0; i < savedRoutesContent.length;i++)
+        {
+          var savedRoutesContentUniqueName = savedRoutesContent[i].uniqueName;
+          savedRoutesContentUniqueName = savedRoutesContentUniqueName.replace(/\s/g, "");
+          var content = document.createElement("div");
+          var duurRoute = BerekenTijd(savedRoutesContent[i].distance, typeRoute);//-> hier een functie voor maken 
+          //console.log(duurRoute);
+          var savedRoutesContentUniqueName = savedRoutesContent[i].uniqueName;
+          savedRoutesContentUniqueName = savedRoutesContentUniqueName.replace(/\s/g, "");
+          var content = document.createElement("div");
+          var duurRoute = BerekenTijd(savedRoutesContent[i].distance, typeRoute);//-> hier een functie voor maken 
+          //console.log(duurRoute);
+            content.innerHTML = `
+            <div style=" height: 8%; width="width:100%" id=`+savedRoutesContentUniqueName+` onclick="GekozenRoute(this.id)" class ="routeChoice popup-close">
+            <div class="vl">
+            <div class="routechoicetext">
+                <p>` + savedRoutesContent[i].name.en + `<br>
+                ` + gateNaam + `  
+                </p>
+                <label>
+                    <i class="icon f7-icons if-not-md"><img src="\img/distance.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
+                    <i class="icon material-icons md-only"><img src="\img/distance.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
+                    ` + savedRoutesContent[i].distance + `km
+                </label>
+                <label>
+                    <i class="icon f7-icons if-not-md"><img src="\img/timerIcon.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
+                    <i class="icon material-icons md-only"><img src="\img/timerIcon.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
+                    <label id= " ` + savedRoutesContentUniqueName +`Duur">
+                      ` + duurRoute + `min
+                    </label>
+                </label>
+                <hr>
+                </div>
+              </div>
+            </div>
+            `;
+          if(savedRoutesContent[i].gateType == geselecteerdeGate)
+          {
+            if(savedRoutesContent[i].type == typeRoute)
+            {
+              tabRoute.appendChild(content);
+              console.log("toegevoegd");
+              var vlElement = document.getElementsByClassName("vl");
+              if(elementId == "0 wandel")
+              {
+                  vlElement[vlElement.length-1].style.borderLeft = "6px solid #ffe43c";
+              }
+              else if(elementId == "1 fiets")
+              {
+                  vlElement[vlElement.length-1].style.borderLeft = "6px solid green";
+              }
+              else if(elementId == "2 paard")
+              {
+                  vlElement[vlElement.length-1].style.borderLeft = " 6px solid red";
+              }
+              else if(elementId == "3 rolstoel")
+              {
+                  vlElement[vlElement.length-1].style.borderLeft = " 6px solid yellow";
+              }
+              aantalRoutes ++;
+            }
+          }
+        }
+        console.log("aantal routes: " + aantalRoutes );
+        if(aantalRoutes == 0)
+        {
+          var empty = document.createElement('p');
+          empty.innerHTML = "Geen routes voor deze combinatie";
+          tabRoute.appendChild(empty);
+        }
+      }
+    },200);
+  }
 }
 
 function RouteContent()
@@ -1165,12 +2084,10 @@ function BerekenTijd(distance, type)
 }
 function poortChange(id)
 {
-  console.log("poort veranderd");
   var savedRoutesContent = [];
   savedRoutesContent = RouteContent();
   
   var gateNaam = id.value;
-  //console.log("poort is: "+ gateNaam);
   var gates = [];
   
   gates = JSON.parse(localStorage.getItem("Gates"));
@@ -1178,101 +2095,304 @@ function poortChange(id)
   var typeRoute = localStorage.getItem("GeselecteerdeRouteSoort");
   for(var i = 0; i< gates.length;i++)
   {
-    var x = gates[i].name.nl;
+    if(localStorage.getItem("GeselecteerdeTaal") == "NL")
+    {
+      var x = gates[i].name.nl;
+    }
+    else if(localStorage.getItem("GeselecteerdeTaal") == "FR")
+    {
+      var x = gates[i].name.fr;
+    }
+    else if(localStorage.getItem("GeselecteerdeTaal") == "ENG")
+    {
+      var x = gates[i].name.en;
+    }
     if(gateNaam == x)
     {
-      //console.log("type" + gates[i].type);
       gateID = gates[i].type;
     }
   }
-
-  var tabRoute = document.getElementById("tab-route");
-  tabRoute.innerHTML = "";
-  //console.log("route type: " + typeRoute);
-  //console.log("GateID: " + gateID);
-  var aantalRoutes = 0;
-  console.log("content.length : " + savedRoutesContent.length);
-  for(var i = 0; i < savedRoutesContent.length;i++)
+  if(localStorage.getItem("GeselecteerdeTaal") == "NL")
   {
-    var savedRoutesContentUniqueName = savedRoutesContent[i].uniqueName;
-    savedRoutesContentUniqueName = savedRoutesContentUniqueName.replace(/\s/g, "");
-    //console.log("uniquename = " + savedRoutesContent[i].uniqueName);
-    var content = document.createElement("div");
-    var duurRoute = BerekenTijd(savedRoutesContent[i].distance, typeRoute);//-> hier een functie voor maken 
-    content.innerHTML = `
-    <div style=" height: 8%; width:100%" id=` + savedRoutesContentUniqueName +` onclick="GekozenRoute(this.id)" class ="routeChoice popup-close">
-    <div class="vl">
-    <div class="routechoicetext">
-        <p>` + savedRoutesContent[i].uniqueName + `<br>
-        ` + gateNaam + `  
-        </p>
-        <label>
-            <i class="icon f7-icons if-not-md"><img src="\img/distance.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
-            <i class="icon material-icons md-only"><img src="\img/distance.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
-            ` + savedRoutesContent[i].distance + `km
-        </label>
-        <label>
-            <i class="icon f7-icons if-not-md"><img src="\img/timerIcon.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
-            <i class="icon material-icons md-only"><img src="\img/timerIcon.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
-            <label id= " ` + savedRoutesContentUniqueName +`Duur">
-              ` + duurRoute + `min
-            </label>
-           
-        </label>
-        <hr>
-      </div>
-    </div>
-    </div>
-    `;
-    if(savedRoutesContent[i].gateType == gateID)
+    var tabRoute = document.getElementById("tab-routeNL");
+  
+    tabRoute.innerHTML = "";
+    //console.log("route type: " + typeRoute);
+    //console.log("GateID: " + gateID);
+    var aantalRoutes = 0;
+    for(var i = 0; i < savedRoutesContent.length;i++)
     {
-      console.log("gatetype == gateID");
-      if(savedRoutesContent[i].type == typeRoute)
+      var savedRoutesContentUniqueName = savedRoutesContent[i].uniqueName;
+      savedRoutesContentUniqueName = savedRoutesContentUniqueName.replace(/\s/g, "");
+      //console.log("uniquename = " + savedRoutesContent[i].uniqueName);
+      var content = document.createElement("div");
+      var duurRoute = BerekenTijd(savedRoutesContent[i].distance, typeRoute);
+        content.innerHTML = `
+        <div style=" height: 8%; width:100%" id=` + savedRoutesContentUniqueName +` onclick="GekozenRoute(this.id)" class ="routeChoice popup-close">
+        <div class="vl">
+        <div class="routechoicetext">
+            <p>` + savedRoutesContent[i].name.nl + `<br>
+            ` + gateNaam + `  
+            </p>
+            <label>
+                <i class="icon f7-icons if-not-md"><img src="\img/distance.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
+                <i class="icon material-icons md-only"><img src="\img/distance.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
+                ` + savedRoutesContent[i].distance + `km
+            </label>
+            <label>
+                <i class="icon f7-icons if-not-md"><img src="\img/timerIcon.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
+                <i class="icon material-icons md-only"><img src="\img/timerIcon.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
+                <label id= " ` + savedRoutesContentUniqueName +`Duur">
+                  ` + duurRoute + `min
+                </label>
+              
+            </label>
+            <hr>
+          </div>
+        </div>
+        </div>
+        `;
+      if(savedRoutesContent[i].gateType == gateID)
       {
-        console.log("type == typeroute");
-        tabRoute.appendChild(content);
-        var vlElement = document.getElementsByClassName("vl");
-            if(typeRoute == 0)
-            {
-                vlElement[vlElement.length-1].style.borderLeft = " 6px solid #ffe43c";
-            }
-            else if(typeRoute == 1)
-            {
-                vlElement[vlElement.length-1].style.borderLeft = " 6px solid #088c34";
-            }
-            else if(typeRoute == 2)
-            {
-                vlElement[vlElement.length-1].style.borderLeft = " 6px solid red";
-            }
-            else if(typeRoute == 3)
-            {
-                vlElement[vlElement.length-1].style.borderLeft = " 6px solid yellow";
-            }
-        aantalRoutes ++;
+        console.log("gatetype == gateID");
+        if(savedRoutesContent[i].type == typeRoute)
+        {
+          //console.log("type == typeroute");
+          tabRoute.appendChild(content);
+          var vlElement = document.getElementsByClassName("vl");
+          if(typeRoute == 0)
+          {
+              vlElement[vlElement.length-1].style.borderLeft = " 6px solid #ffe43c";
+          }
+          else if(typeRoute == 1)
+          {
+              vlElement[vlElement.length-1].style.borderLeft = " 6px solid #088c34";
+          }
+          else if(typeRoute == 2)
+          {
+              vlElement[vlElement.length-1].style.borderLeft = " 6px solid red";
+          }
+          else if(typeRoute == 3)
+          {
+              vlElement[vlElement.length-1].style.borderLeft = " 6px solid yellow";
+          }
+          aantalRoutes ++;
+        }
       }
     }
+    console.log("aantal routes: " + aantalRoutes );
+    if(aantalRoutes == 0)
+    {
+      var empty = document.createElement('p');
+      empty.innerHTML = "Geen routes voor deze combinatie";
+      tabRoute.appendChild(empty);
+    }
   }
-  console.log("aantal routes: " + aantalRoutes );
-  if(aantalRoutes == 0)
+  else if(localStorage.getItem("GeselecteerdeTaal") == "FR")
   {
-    var empty = document.createElement('p');
-    empty.innerHTML = "Geen routes voor deze combinatie";
-    tabRoute.appendChild(empty);
+    var tabRoute = document.getElementById("tab-routeFR");
+  
+    tabRoute.innerHTML = "";
+    //console.log("route type: " + typeRoute);
+    //console.log("GateID: " + gateID);
+    var aantalRoutes = 0;
+    console.log("content.length : " + savedRoutesContent.length);
+    for(var i = 0; i < savedRoutesContent.length;i++)
+    {
+      var savedRoutesContentUniqueName = savedRoutesContent[i].uniqueName;
+      savedRoutesContentUniqueName = savedRoutesContentUniqueName.replace(/\s/g, "");
+      //console.log("uniquename = " + savedRoutesContent[i].uniqueName);
+      var content = document.createElement("div");
+      var duurRoute = BerekenTijd(savedRoutesContent[i].distance, typeRoute);//-> hier een functie voor maken 
+        content.innerHTML = `
+        <div style=" height: 8%; width:100%" id=` + savedRoutesContentUniqueName +` onclick="GekozenRoute(this.id)" class ="routeChoice popup-close">
+        <div class="vl">
+        <div class="routechoicetext">
+            <p>` + savedRoutesContent[i].name.fr + `<br>
+            ` + gateNaam + `  
+            </p>
+            <label>
+                <i class="icon f7-icons if-not-md"><img src="\img/distance.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
+                <i class="icon material-icons md-only"><img src="\img/distance.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
+                ` + savedRoutesContent[i].distance + `km
+            </label>
+            <label>
+                <i class="icon f7-icons if-not-md"><img src="\img/timerIcon.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
+                <i class="icon material-icons md-only"><img src="\img/timerIcon.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
+                <label id= " ` + savedRoutesContentUniqueName +`Duur">
+                  ` + duurRoute + `min
+                </label>
+              
+            </label>
+            <hr>
+          </div>
+        </div>
+        </div>
+        `;
+      if(savedRoutesContent[i].gateType == gateID)
+      {
+        console.log("gatetype == gateID");
+        if(savedRoutesContent[i].type == typeRoute)
+        {
+          console.log("type == typeroute");
+          tabRoute.appendChild(content);
+          var vlElement = document.getElementsByClassName("vl");
+          if(typeRoute == 0)
+          {
+              vlElement[vlElement.length-1].style.borderLeft = " 6px solid #ffe43c";
+          }
+          else if(typeRoute == 1)
+          {
+              vlElement[vlElement.length-1].style.borderLeft = " 6px solid #088c34";
+          }
+          else if(typeRoute == 2)
+          {
+              vlElement[vlElement.length-1].style.borderLeft = " 6px solid red";
+          }
+          else if(typeRoute == 3)
+          {
+              vlElement[vlElement.length-1].style.borderLeft = " 6px solid yellow";
+          }
+          aantalRoutes ++;
+        }
+      }
+    }
+    console.log("aantal routes: " + aantalRoutes );
+    if(aantalRoutes == 0)
+    {
+      var empty = document.createElement('p');
+      empty.innerHTML = "Geen routes voor deze combinatie";
+      tabRoute.appendChild(empty);
+    }
   }
-
+  else if(localStorage.getItem("GeselecteerdeTaal") == "ENG")
+  {
+    var tabRoute = document.getElementById("tab-routeENG");
+    tabRoute.innerHTML = "";
+    //console.log("route type: " + typeRoute);
+    //console.log("GateID: " + gateID);
+    var aantalRoutes = 0;
+    for(var i = 0; i < savedRoutesContent.length;i++)
+    {
+      var savedRoutesContentUniqueName = savedRoutesContent[i].uniqueName;
+      savedRoutesContentUniqueName = savedRoutesContentUniqueName.replace(/\s/g, "");
+      //console.log("uniquename = " + savedRoutesContent[i].uniqueName);
+      var content = document.createElement("div");
+      var duurRoute = BerekenTijd(savedRoutesContent[i].distance, typeRoute);//-> hier een functie voor maken 
+        content.innerHTML = `
+        <div style=" height: 8%; width:100%" id=` + savedRoutesContentUniqueName +` onclick="GekozenRoute(this.id)" class ="routeChoice popup-close">
+        <div class="vl">
+        <div class="routechoicetext">
+            <p>` + savedRoutesContent[i].name.en + `<br>
+            ` + gateNaam + `  
+            </p>
+            <label>
+                <i class="icon f7-icons if-not-md"><img src="\img/distance.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
+                <i class="icon material-icons md-only"><img src="\img/distance.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
+                ` + savedRoutesContent[i].distance + `km
+            </label>
+            <label>
+                <i class="icon f7-icons if-not-md"><img src="\img/timerIcon.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
+                <i class="icon material-icons md-only"><img src="\img/timerIcon.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
+                <label id= " ` + savedRoutesContentUniqueName +`Duur">
+                  ` + duurRoute + `min
+                </label>
+              
+            </label>
+            <hr>
+          </div>
+        </div>
+        </div>
+        `;
+      if(savedRoutesContent[i].gateType == gateID)
+      {
+        if(savedRoutesContent[i].type == typeRoute)
+        {
+          tabRoute.appendChild(content);
+          var vlElement = document.getElementsByClassName("vl");
+          if(typeRoute == 0)
+          {
+              vlElement[vlElement.length-1].style.borderLeft = " 6px solid #ffe43c";
+          }
+          else if(typeRoute == 1)
+          {
+              vlElement[vlElement.length-1].style.borderLeft = " 6px solid #088c34";
+          }
+          else if(typeRoute == 2)
+          {
+              vlElement[vlElement.length-1].style.borderLeft = " 6px solid red";
+          }
+          else if(typeRoute == 3)
+          {
+              vlElement[vlElement.length-1].style.borderLeft = " 6px solid yellow";
+          }
+          aantalRoutes ++;
+        }
+      }
+    }
+    console.log("aantal routes: " + aantalRoutes );
+    if(aantalRoutes == 0)
+    {
+      var empty = document.createElement('p');
+      empty.innerHTML = "Geen routes voor deze combinatie";
+      tabRoute.appendChild(empty);
+    }
+  }
 }
 function GekozenRoute(name)
 {
-  document.getElementById("mapid").style.height = "85%";
-  document.getElementById("btnRoute").style.display = 'none';
-  document.getElementById("BeforeRoute").style.display = 'block';
+  if(localStorage.getItem("GeselecteerdeTaal") == "NL")
+  {
+    document.getElementById("mapidNL").style.height = "85%";
+    document.getElementsByClassName("btnRouteNL")[0].style.display = "none";
+    document.getElementsByClassName("KiesRouteDivNL")[0].style.display = 'none';
+    document.getElementsByClassName("BeforeRouteNL")[0].style.display = 'block';
+    if (Framework7.device.ios) 
+    {
+      document.getElementsByClassName("BeforeRouteNL")[0].style.marginTop = "-29%";
+    }
+    else
+    {
+      document.getElementsByClassName("BeforeRouteNL")[0].style.marginTop = "-22%";
+    }
+  }
+  else if(localStorage.getItem("GeselecteerdeTaal") == "FR")
+  {
+    document.getElementById("mapidFR").style.height = "85%";
+    document.getElementsByClassName("btnRouteFR")[0].style.display = "none";
+    document.getElementsByClassName("KiesRouteDivFR")[0].style.display = 'none';
+    document.getElementsByClassName("BeforeRouteFR")[0].style.display = 'block';
+    if (Framework7.device.ios) 
+    {
+      document.getElementsByClassName("BeforeRouteFR")[0].style.marginTop = "-29%";
+    }
+    else
+    {
+      document.getElementsByClassName("BeforeRouteFR")[0].style.marginTop = "-22%";
+    }
+  }
+  else if(localStorage.getItem("GeselecteerdeTaal") == "ENG")
+  {
+    document.getElementById("mapidENG").style.height = "85%";
+    document.getElementsByClassName("btnRouteENG")[0].style.display = "none";
+    document.getElementsByClassName("KiesRouteDivENG")[0].style.display = 'none';
+    document.getElementsByClassName("BeforeRouteENG")[0].style.display = 'block';
+    if (Framework7.device.ios) 
+    {
+      document.getElementsByClassName("BeforeRouteENG")[0].style.marginTop = "-29%";
+    }
+    else
+    {
+      document.getElementsByClassName("BeforeRouteENG")[0].style.marginTop = "-22%";
+    }
+  }
   console.log("route geselecteerd");
   var gekozenRouteName = name;
   var localstorageRoutePoints = gekozenRouteName + "RoutePoints";
   coords = JSON.parse(localStorage.getItem(localstorageRoutePoints));
   console.log(localstorageRoutePoints);
 
-  StartMarker = L.marker([coords[0].lat,coords[0].lng], {icon: greenIcon});
+  StartMarker = L.marker([coords[0].lat,coords[0].lng], {icon: StartIcon});
   mymap.addLayer(StartMarker);
 
   //console.log(coords[0]);
@@ -1283,13 +2403,32 @@ function GekozenRoute(name)
     //testLocalStorage[i] = localStorage.getItem(localStorage.key(i));
     try
     {
+      //kijken of het eerste teken van x een { of een [ is, indien nee, continue anders break
       x = localStorage.getItem(localStorage.key(i));
+
+
+
+
       x = JSON.parse(x);
-      //console.log(x.distance);
       //x = JSON.stringify(x,null,2);
       if(gekozenRouteName == x.uniqueName.replace(/\s/g, ""))
       {
-        console.log("gevonden!");
+        if(localStorage.getItem("GeselecteerdeTaal") == "NL")
+        {
+          document.getElementById("BeforeRouteNameNL").innerHTML = x.name.nl;
+          localStorage.setItem("GekozenRouteName",x.name.nl);
+        }
+        else if(localStorage.getItem("GeselecteerdeTaal") == "FR")
+        {
+          document.getElementById("BeforeRouteNameFR").innerHTML = x.name.fr;
+          localStorage.setItem("GekozenRouteName",x.name.fr);
+        }
+        else if(localStorage.getItem("GeselecteerdeTaal") == "ENG")
+        {
+          document.getElementById("BeforeRouteNameENG").innerHTML = x.name.en;
+          µlocalStorage.setItem("GekozenRouteName",x.name.en);
+        }
+        localStorage.setItem("GekozenRouteName",x.uniqueName);
         GekozenRouteDistance = x.distance;
         GekozenRouteType = x.type;
         console.log("GekozenRouteType = " + GekozenRouteType);
@@ -1309,7 +2448,6 @@ function GekozenRoute(name)
         },200)
         
       }
-      
     }
     catch(err)
     {
@@ -1324,7 +2462,7 @@ function GekozenRoute(name)
 */  
   if(localStorage.getItem("polyline") !=null)
   {
-    //polyline = L.polyline(JSON.parse(localStorage.getItem("polyline"))).addTo(mymap); 
+    /*
     for(i in mymap._layers) 
     {
       if(mymap._layers[i]._path != undefined) 
@@ -1340,134 +2478,421 @@ function GekozenRoute(name)
       }
     }
     console.log("polyline removed");
+    */
+    for (var key in window) 
+    {
+      try
+      {
+        if(window["polyline" + (x)] != undefined)
+        {
+          if(window["polyline" + (x)].options.color == "yellow" || window["polyline" + (x)].options.color == "orange" || window["polyline" + (x)].options.color == "lightgreen")
+          {
+            mymap.removeLayer(window["polyline" + (x)]);
+          }
+        }
+        else
+        {
+          console.log("polyline is undefined");
+        }
+      }
+      catch(err)
+      {
+        console.log(err);
+      }
+      x++;
+    }
   }
   for(var i = 0; i < coords.length; i++)
   {
     if(i>0)
     {
-      window['polyline' + i] = [[coords[i-1].lat, coords[i-1].lng],[coords[i].lat, coords[i].lng]];
-      //console.log(window['polyline' + i]);
-      polylineLines.push([[coords[i-1].lat, coords[i-1].lng],[coords[i].lat, coords[i].lng]]);
-      //polylineLines.push(window['polyline' + i]);
-      window['polyline' + i] = L.polyline( window['polyline' + i]).addTo(mymap); 
-      window['polyline' + i].setStyle(
+      if(i<3)
       {
-        color: 'orange'
-      }); 
+        window['polyline' + i] = [[coords[i-1].lat, coords[i-1].lng],[coords[i].lat, coords[i].lng]];
+        window['polyline' + i] = L.polyline( window['polyline' + i]).addTo(mymap); 
+        window['polyline' + i].setStyle(
+        {
+          color: 'yellow'
+        }); 
+      }
+      else
+      {
+        window['polyline' + i] = [[coords[i-1].lat, coords[i-1].lng],[coords[i].lat, coords[i].lng]];
+        //console.log(window['polyline' + i]);
+        polylineLines.push([[coords[i-1].lat, coords[i-1].lng],[coords[i].lat, coords[i].lng]]);
+        //polylineLines.push(window['polyline' + i]);
+        window['polyline' + i] = L.polyline( window['polyline' + i]).addTo(mymap); 
+        window['polyline' + i].setStyle(
+        {
+          color: 'orange'
+        }); 
+      }
+      
     }
     
     //console.log(coords[i]);
     
   }
-  window['polyline' + (0)] = [[polylineLines[0][0][0], polylineLines[0][0][1]],[polylineLines[0][1][0], polylineLines[0][1][1]]];
+  try
+  {
+    /*mymap.removeLayer(window["polyline" + (0)]);
+    mymap.removeLayer(window["polyline" + (1)]);*/
+  }
+  catch(err)
+  {
+    console.log(err);
+  }
+  
+  /*window['polyline' + (0)] = [[polylineLines[0][0][0], polylineLines[0][0][1]],[polylineLines[0][1][0], polylineLines[0][1][1]]];
   window['polyline' + (0)] = L.polyline( window['polyline' + (0)],{color: 'yellow'}).addTo(mymap);
   window['polyline' + (1)] = [[polylineLines[0][0][0], polylineLines[0][0][1]],[polylineLines[0][1][0], polylineLines[0][1][1]]];
-  window['polyline' + (1)] = L.polyline( window['polyline' + (1)],{color: 'yellow'}).addTo(mymap);
+  window['polyline' + (1)] = L.polyline( window['polyline' + (1)],{color: 'yellow'}).addTo(mymap);*/
   localStorage.setItem("polyline",JSON.stringify(coords));
   polylineCoords = coords;
+  document.getElementById("RouteTotaleAfstand").innerHTML = GekozenRouteDistance;
+  document.getElementById("RouteAfgelegdeAfstand").innerHTML = "0.00";
+  document.getElementById("RouteResterendeTijd").innerHTML = TotaleDuurRoute;
   //console.log(polylineCoords);
   //Kaart(coords);
 }
-//var coords = [["50.76752","4.43747"],["50.76752","4.43746"],["50.7675","4.43734"],["50.7675","4.43724"],["50.76751","4.43711"],["50.76765","4.43607"],["50.76781","4.43516"],["50.76784","4.435"],["50.76784","4.43488"],["50.76782","4.43477"],["50.76768","4.43427"],["50.76752","4.43377"],["50.76746","4.43356"],["50.7674","4.4334"],["50.76729","4.43298"],["50.76719","4.43263"],["50.76713","4.43239"],["50.76675","4.43078"],["50.76671","4.4306"],["50.76669","4.43057"],["50.76667","4.43055"],["50.76663","4.43055"],["50.76648","4.43063"],["50.76589","4.431"],["50.76571","4.43124"],["50.76556","4.43151"],["50.76549","4.43161"],["50.76545","4.43178"],["50.76539","4.4319"],["50.76525","4.43206"],["50.7651","4.43208"],["50.76504","4.43209"],["50.76498","4.43213"],["50.76483","4.43221"],["50.76472","4.43208"],["50.76458","4.43195"],["50.76428","4.43185"],["50.76417","4.43184"],["50.76405","4.43183"],["50.76383","4.4318"],["50.76367","4.43182"],["50.76354","4.43183"],["50.76286","4.43194"],["50.7618","4.43217"],["50.76092","4.43233"],["50.76054","4.4324"],["50.76025","4.43246"],["50.75948","4.43262"],["50.75945","4.43254"],["50.75937","4.43233"],["50.75931","4.43218"],["50.75925","4.43203"],["50.7592","4.43191"],["50.75915","4.43176"],["50.75907","4.43157"],["50.75884","4.43097"],["50.75875","4.43072"],["50.7585","4.43008"],["50.7583","4.42957"],["50.75782","4.42832"],["50.7575","4.42749"],["50.75681","4.42569"],["50.75663","4.42568"],["50.75641","4.42566"],["50.75619","4.42564"],["50.75605","4.42563"],["50.75581","4.42562"],["50.75566","4.42561"],["50.75555","4.4256"],["50.75539","4.42559"],["50.75527","4.42558"],["50.75517","4.42557"],["50.75504","4.42556"],["50.75484","4.42555"],["50.75473","4.42555"],["50.75468","4.42554"],["50.75457","4.42554"],["50.75447","4.42553"],["50.7544","4.42553"],["50.75429","4.42552"],["50.75286","4.4254"],["50.75298","4.42501"],["50.75362","4.42299"],["50.75388","4.42217"],["50.75392","4.42205"],["50.75403","4.4217"],["50.75411","4.42159"],["50.75432","4.42149"],["50.75445","4.42147"],["50.75453","4.42146"],["50.75461","4.42145"],["50.75493","4.42132"],["50.7552","4.4212"],["50.75542","4.4211"],["50.75568","4.42099"],["50.75603","4.42086"],["50.75625","4.42087"],["50.7567","4.42098"],["50.757","4.4209"],["50.75764","4.4206"],["50.75769","4.42056"],["50.75807","4.42022"],["50.7584","4.41978"],["50.75858","4.41976"],["50.75941","4.42013"],["50.75981","4.42039"],["50.75995","4.42051"],["50.76006","4.42069"],["50.76061","4.42183"],["50.76084","4.42223"],["50.76122","4.42261"],["50.76133","4.42273"],["50.76146","4.42295"],["50.76154","4.42314"],["50.76165","4.42334"],["50.76186","4.42361"],["50.76192","4.42368"],["50.76206","4.42388"],["50.76223","4.42413"],["50.7624","4.42438"],["50.76251","4.42454"],["50.76264","4.42468"],["50.76281","4.42483"],["50.76292","4.42495"],["50.76312","4.42519"],["50.7633","4.42548"],["50.76346","4.42579"],["50.76363","4.42603"],["50.76368","4.42611"],["50.76373","4.42617"],["50.76376","4.42623"],["50.76381","4.42642"],["50.76383","4.42661"],["50.76384","4.42682"],["50.76387","4.42698"],["50.76392","4.42711"],["50.764","4.4274"],["50.76411","4.42762"],["50.76416","4.42774"],["50.76418","4.42789"],["50.76421","4.42824"],["50.76429","4.42859"],["50.76431","4.42873"],["50.76435","4.42894"],["50.76441","4.42923"],["50.76446","4.4295"],["50.76449","4.42978"],["50.76451","4.43024"],["50.76454","4.43057"],["50.76459","4.43086"],["50.76468","4.43144"],["50.76483","4.43221"],["50.76487","4.43236"],["50.76488","4.43257"],["50.76492","4.43296"],["50.76501","4.4337"],["50.76524","4.43494"],["50.76542","4.43575"],["50.76554","4.43612"],["50.76564","4.43636"],["50.7658","4.43673"],["50.76616","4.43764"],["50.76595","4.43632"],["50.76606","4.43651"],["50.76636","4.43745"],["50.76693","4.43901"],["50.76707","4.4394"],["50.76709","4.43953"],["50.76712","4.43969"],["50.76716","4.44028"],["50.76721","4.44088"],["50.76731","4.44202"],["50.76733","4.44216"],["50.76738","4.44227"],["50.76745","4.44237"],["50.76759","4.44246"],["50.76771","4.44253"],["50.76795","4.44268"],["50.76805","4.44274"],["50.76814","4.44271"],["50.76821","4.44262"],["50.76826","4.44242"],["50.76831","4.44213"],["50.76836","4.44195"],["50.76838","4.44191"],["50.76842","4.4419"],["50.76844","4.44202"],["50.76847","4.44225"],["50.76848","4.44234"],["50.76849","4.44244"],["50.76849","4.44255"],["50.76853","4.44255"],["50.76859","4.44255"],["50.76864","4.44254"],["50.76868","4.44251"],["50.76873","4.44246"],["50.76888","4.44227"],["50.76882","4.44186"],["50.76881","4.44176"],["50.76873","4.44118"],["50.76871","4.44111"],["50.76868","4.44106"],["50.76862","4.44103"],["50.76848","4.44106"],["50.76845","4.44101"],["50.76835","4.44047"],["50.76832","4.44038"],["50.76808","4.4395"],["50.76805","4.4394"],["50.76801","4.43929"],["50.76798","4.43911"],["50.76795","4.43899"],["50.76791","4.43877"],["50.76786","4.43854"],["50.76782","4.43849"],["50.7678","4.43844"],["50.76755","4.43759"]];
 $(document).on('page:init', function (e, page) 
 {
   var gates = [];
-  gates = JSON.parse(localStorage.getItem("Gates"));
-   //console.log("interval stopt");
-   
-   var select = document.getElementById("poortendropdown"); 
-   if(select != null)
-   {
-     //console.log("select element bestaat");
-     for(var i = 0; i < gates.length; i++) 
-     {
-       var opt = gates[i];
-       //console.log(opt.name.nl);
-       var el = document.createElement("option");
-       el.textContent = opt.name.nl;
-       el.setAttribute("id", gates[i].type);
-       el.setAttribute("value", gates[i].type);
-       el.value = opt.name.nl;
-       select.appendChild(el);
-     }
-    var savedRoutesContent = [];
+  localStorage.setItem("GeselecteerdeRouteSoort",0);
+  if(localStorage.getItem("GeselecteerdeTaal") == "FR")
+  {
 
-    savedRoutesContent = RouteContent();
-    //savedRoutesContent = JSON.parse(localStorage.getItem())
-    var dropDownElementInterval = setInterval(function()
+    console.log("frans geselecteerd");
+    //MapInitialise();
+    var iconTooltipFRCarte = app.tooltip.create(
     {
-      var e = document.getElementById("poortendropdown");
-      if(e != null)
+      targetEl: '.tooltip-FRCarte',
+      text: "Partagez votre localisation afin que nous puissions facilement localiser le problème.",
+    });
+    var iconTooltipFREncy = app.tooltip.create(
+    {
+      targetEl: '.tooltip-FREncy',
+      text: "Partagez votre localisation afin que nous puissions facilement localiser le problème.",
+    });
+    
+
+    gates = JSON.parse(localStorage.getItem("Gates"));
+    //console.log("interval stopt");
+  
+    var select = document.getElementById("poortendropdownFR"); 
+    if(select != null)
+    {
+      //console.log("select element bestaat");
+      for(var i = 0; i < gates.length; i++) 
       {
-        
-        clearInterval(dropDownElementInterval);
-        document.getElementById("0 wandel").style.backgroundColor = "#ffe43c";
-        var geselecteerdeGate= 0;
-        var gateNaam = e.options[e.selectedIndex].value;
-        var typeRoute = 0;
-        //console.log(gateId);
-        var tabRoute = document.getElementById("tab-route");
-        tabRoute.innerHTML = "";
-        
-        
-        var aantalRoutes = 0;
-        for(var i = 0; i < savedRoutesContent.length;i++)
+        var opt = gates[i];
+        //console.log(opt.name.nl);
+        var el = document.createElement("option");
+        el.textContent = opt.name.nl;
+        el.setAttribute("id", gates[i].type);
+        el.setAttribute("value", gates[i].type);
+        el.value = opt.name.fr;
+        select.appendChild(el);
+      }
+      var savedRoutesContent = [];
+
+      savedRoutesContent = RouteContent();
+      //savedRoutesContent = JSON.parse(localStorage.getItem())
+      var dropDownElementInterval = setInterval(function()
+      {
+        var e = document.getElementById("poortendropdownFR");
+        if(e != null)
         {
-          var content = document.createElement("div");
-          //console.log("routeGateType: " + savedRoutesContent[i].gateType);
-          //console.log("routeType: " + savedRoutesContent[i].type);
-          var duurRoute = BerekenTijd(savedRoutesContent[i].distance, typeRoute);//-> hier een functie voor maken
-          if(savedRoutesContent[i].gateType == 0 && savedRoutesContent[i].type == 0)
+          
+          clearInterval(dropDownElementInterval);
+          document.getElementsByClassName("soort-wandelFR")[0].style.backgroundColor = "#ffe43c";
+          //stijlElement.getElementById("0 wandel").style.backgroundColor = "#ffe43c";
+          var geselecteerdeGate= 0;
+          var gateNaam = e.options[e.selectedIndex].value;
+          var typeRoute = 0;
+          //console.log(gateId);
+          var tabRoute = document.getElementById("tab-routeFR");
+          tabRoute.innerHTML = "";
+          
+          
+          var aantalRoutes = 0;
+          for(var i = 0; i < savedRoutesContent.length;i++)
           {
-            var savedRoutesContentUniqueName = savedRoutesContent[i].uniqueName;
-            savedRoutesContentUniqueName = savedRoutesContentUniqueName.replace(/\s/g, "");
-            //console.log(savedRoutesContent[i]);
-            //console.log(savedRoutesContent[i]);
-            content.innerHTML = 
-            `
-            <div style=" height: 8%; width:100%" id=`+savedRoutesContentUniqueName+` onclick="GekozenRoute(this.id)" class ="routeChoice popup-close">
-              <div class="vl">
-                <div class="routechoicetext " >
-                    <p>` + savedRoutesContent[i].uniqueName + `<br>
-                    ` + gateNaam + `  
-                    </p>
-                    <label>
-                        <i class="icon f7-icons if-not-md"><img src="\img/distance.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
-                        <i class="icon material-icons md-only"><img src="\img/distance.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
-                        ` + savedRoutesContent[i].distance + `km
-                    </label>
-                    <label>
-                        <i class="icon f7-icons if-not-md"><img src="\img/timerIcon.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
-                        <i class="icon material-icons md-only"><img src="\img/timerIcon.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
-                        <label id= " ` + savedRoutesContentUniqueName +`Duur">
-                          ` + duurRoute + `min
-                        </label>
-                    </label>
-                    <hr>
+            var content = document.createElement("div");
+            //console.log("routeGateType: " + savedRoutesContent[i].gateType);
+            //console.log("routeType: " + savedRoutesContent[i].type);
+            var duurRoute = BerekenTijd(savedRoutesContent[i].distance, typeRoute);//-> hier een functie voor maken
+            if(savedRoutesContent[i].gateType == 0 && savedRoutesContent[i].type == 0)
+            {
+              var savedRoutesContentUniqueName = savedRoutesContent[i].uniqueName;
+              savedRoutesContentUniqueName = savedRoutesContentUniqueName.replace(/\s/g, "");
+              //console.log(savedRoutesContent[i]);
+              //console.log(savedRoutesContent[i]);
+              content.innerHTML = 
+              `
+              <div style=" height: 8%; width:100%" id=`+savedRoutesContentUniqueName+` onclick="GekozenRoute(this.id)" class ="routeChoice popup-close">
+                <div class="vl">
+                  <div class="routechoicetext " >
+                      <p>` + savedRoutesContent[i].name.fr + `<br>
+                      ` + gateNaam + `  
+                      </p>
+                      <label>
+                          <i class="icon f7-icons if-not-md"><img src="\img/distance.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
+                          <i class="icon material-icons md-only"><img src="\img/distance.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
+                          ` + savedRoutesContent[i].distance + `km
+                      </label>
+                      <label>
+                          <i class="icon f7-icons if-not-md"><img src="\img/timerIcon.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
+                          <i class="icon material-icons md-only"><img src="\img/timerIcon.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
+                          <label id= " ` + savedRoutesContentUniqueName +`Duur">
+                            ` + duurRoute + `min
+                          </label>
+                      </label>
+                      <hr>
+                    </div>
                   </div>
                 </div>
-              </div>
-            `;
-            tabRoute.appendChild(content);
-            console.log("bovenstaande data is toegevoegd");
-            aantalRoutes ++;
-          } 
-          //console.log(duurRoute);
+              `;
+              tabRoute.appendChild(content);
+              //console.log("bovenstaande data is toegevoegd");
+              aantalRoutes ++;
+            } 
+            //console.log(duurRoute);
+          }
+          //console.log("aantal routes: " + aantalRoutes );
+          if(aantalRoutes == 0)
+          {
+            var empty = document.createElement('p');
+            empty.innerHTML = "Geen routes voor deze combinatie";
+            tabRoute.appendChild(empty);
+          }
         }
-        //console.log("aantal routes: " + aantalRoutes );
-        if(aantalRoutes == 0)
-        {
-          var empty = document.createElement('p');
-          empty.innerHTML = "Geen routes voor deze combinatie";
-          tabRoute.appendChild(empty);
-        }
-      }
-    },200);
+      },200);
+    }
+    else
+    {
+    console.log("select element bestaat niet");
+    }
+
   }
-  else
+  else if(localStorage.getItem("GeselecteerdeTaal") == "ENG")
   {
-  console.log("select element bestaat niet");
+    console.log("eng loaded");
+    var iconTooltipMap = app.tooltip.create({
+      targetEl: '.tooltip-ENGMap',
+      text: "Share your location so we can easily locate the spot of a possible problem.",
+    });
+    var iconTooltipEncyENG = app.tooltip.create({
+      targetEl: '.tooltip-ENGEncy',
+      text: "Share your location so we can easily locate the spot of a possible problem.",
+    });
+    gates = JSON.parse(localStorage.getItem("Gates"));
+    //console.log("interval stopt");
+  
+    var select = document.getElementById("poortendropdownENG"); 
+    if(select != null)
+    {
+      //console.log("select element bestaat");
+      for(var i = 0; i < gates.length; i++) 
+      {
+        var opt = gates[i];
+        //console.log(opt.name.nl);
+        var el = document.createElement("option");
+        el.textContent = opt.name.en;
+        el.setAttribute("id", gates[i].type);
+        el.setAttribute("value", gates[i].type);
+        el.value = opt.name.en;
+        select.appendChild(el);
+      }
+      var savedRoutesContent = [];
+
+      savedRoutesContent = RouteContent();
+      //savedRoutesContent = JSON.parse(localStorage.getItem())
+      var dropDownElementInterval = setInterval(function()
+      {
+        var e = document.getElementById("poortendropdownENG");
+        if(e != null)
+        {
+          
+          clearInterval(dropDownElementInterval);
+          document.getElementsByClassName("soort-wandelENG")[0].style.backgroundColor = "#ffe43c";
+          var geselecteerdeGate= 0;
+          var gateNaam = e.options[e.selectedIndex].value;
+          var typeRoute = 0;
+          //console.log(gateId);
+          var tabRoute = document.getElementById("tab-routeENG");
+          tabRoute.innerHTML = "";
+          
+          
+          var aantalRoutes = 0;
+          for(var i = 0; i < savedRoutesContent.length;i++)
+          {
+            var content = document.createElement("div");
+            //console.log("routeGateType: " + savedRoutesContent[i].gateType);
+            //console.log("routeType: " + savedRoutesContent[i].type);
+            var duurRoute = BerekenTijd(savedRoutesContent[i].distance, typeRoute);//-> hier een functie voor maken
+            if(savedRoutesContent[i].gateType == 0 && savedRoutesContent[i].type == 0)
+            {
+              var savedRoutesContentUniqueName = savedRoutesContent[i].uniqueName;
+              savedRoutesContentUniqueName = savedRoutesContentUniqueName.replace(/\s/g, "");
+              //console.log(savedRoutesContent[i]);
+              //console.log(savedRoutesContent[i]);
+              content.innerHTML = 
+              `
+              <div style=" height: 8%; width:100%" id=`+savedRoutesContentUniqueName+` onclick="GekozenRoute(this.id)" class ="routeChoice popup-close">
+                <div class="vl">
+                  <div class="routechoicetext " >
+                      <p>` + savedRoutesContent[i].name.en + `<br>
+                      ` + gateNaam + `  
+                      </p>
+                      <label>
+                          <i class="icon f7-icons if-not-md"><img src="\img/distance.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
+                          <i class="icon material-icons md-only"><img src="\img/distance.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
+                          ` + savedRoutesContent[i].distance + `km
+                      </label>
+                      <label>
+                          <i class="icon f7-icons if-not-md"><img src="\img/timerIcon.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
+                          <i class="icon material-icons md-only"><img src="\img/timerIcon.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
+                          <label id= " ` + savedRoutesContentUniqueName +`Duur">
+                            ` + duurRoute + `min
+                          </label>
+                      </label>
+                      <hr>
+                    </div>
+                  </div>
+                </div>
+              `;
+              tabRoute.appendChild(content);
+              console.log("bovenstaande data is toegevoegd");
+              aantalRoutes ++;
+            } 
+            //console.log(duurRoute);
+          }
+          //console.log("aantal routes: " + aantalRoutes );
+          if(aantalRoutes == 0)
+          {
+            var empty = document.createElement('p');
+            empty.innerHTML = "Geen routes voor deze combinatie";
+            tabRoute.appendChild(empty);
+          }
+        }
+      },200);
+    }
+    else
+    {
+    console.log("select element bestaat niet");
+    }
+
   }
+  else if(localStorage.getItem("GeselecteerdeTaal") == "NL")
+  {
+    console.log("in nl versie");
+    var iconTooltipKaart = app.tooltip.create({
+      targetEl: '.tooltip-NLKaart',
+      text: "Deel jouw locatie zodat wij gemakkelijk de plaats kunnen signaleren waar een probleem zich voordoet.",
+    });
+    var iconTooltipEncie = app.tooltip.create({
+      targetEl: '.tooltip-NLEncie',
+      text: "Deel jouw locatie zodat wij gemakkelijk de plaats kunnen signaleren waar een probleem zich voordoet.",
+    });
+    gates = JSON.parse(localStorage.getItem("Gates"));
+    //console.log("interval stopt");
+  
+    var select = document.getElementById("poortendropdown"); 
+    if(select != null)
+    {
+      //console.log("select element bestaat");
+      for(var i = 0; i < gates.length; i++) 
+      {
+        var opt = gates[i];
+        //console.log(opt.name.nl);
+        var el = document.createElement("option");
+        el.textContent = opt.name.nl;
+        el.setAttribute("id", gates[i].type);
+        el.setAttribute("value", gates[i].type);
+        el.value = opt.name.nl;
+        select.appendChild(el);
+      }
+      var savedRoutesContent = [];
+
+      savedRoutesContent = RouteContent();
+      //savedRoutesContent = JSON.parse(localStorage.getItem())
+      var dropDownElementInterval = setInterval(function()
+      {
+        var e = document.getElementById("poortendropdown");
+        if(e != null)
+        {
+          
+          clearInterval(dropDownElementInterval);
+          document.getElementsByClassName("soort-wandelNL")[0].style.backgroundColor = "#ffe43c";
+          var geselecteerdeGate= 0;
+          var gateNaam = e.options[e.selectedIndex].value;
+          var typeRoute = 0;
+          //console.log(gateId);
+          var tabRoute = document.getElementById("tab-routeNL");
+          tabRoute.innerHTML = "";
+          
+          
+          var aantalRoutes = 0;
+          for(var i = 0; i < savedRoutesContent.length;i++)
+          {
+            var content = document.createElement("div");
+            //console.log("routeGateType: " + savedRoutesContent[i].gateType);
+            //console.log("routeType: " + savedRoutesContent[i].type);
+            var duurRoute = BerekenTijd(savedRoutesContent[i].distance, typeRoute);//-> hier een functie voor maken
+            if(savedRoutesContent[i].gateType == 0 && savedRoutesContent[i].type == 0)
+            {
+              var savedRoutesContentUniqueName = savedRoutesContent[i].uniqueName;
+              savedRoutesContentUniqueName = savedRoutesContentUniqueName.replace(/\s/g, "");
+              //console.log(savedRoutesContent[i]);
+              //console.log(savedRoutesContent[i]);
+              content.innerHTML = 
+              `
+              <div style=" height: 8%; width:100%" id=`+savedRoutesContentUniqueName+` onclick="GekozenRoute(this.id)" class ="routeChoice popup-close">
+                <div class="vl">
+                  <div class="routechoicetext " >
+                      <p>` + savedRoutesContent[i].uniqueName + `<br>
+                      ` + gateNaam + `  
+                      </p>
+                      <label>
+                          <i class="icon f7-icons if-not-md"><img src="\img/distance.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
+                          <i class="icon material-icons md-only"><img src="\img/distance.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
+                          ` + savedRoutesContent[i].distance + `km
+                      </label>
+                      <label>
+                          <i class="icon f7-icons if-not-md"><img src="\img/timerIcon.png"style='height: 100%; width: 100%; object-fit: contain'/></i>
+                          <i class="icon material-icons md-only"><img src="\img/timerIcon.png" style='height: 100%; width: 100%; object-fit: contain'/></i>
+                          <label id= " ` + savedRoutesContentUniqueName +`Duur">
+                            ` + duurRoute + `min
+                          </label>
+                      </label>
+                      <hr>
+                    </div>
+                  </div>
+                </div>
+              `;
+              tabRoute.appendChild(content);
+              console.log("bovenstaande data is toegevoegd");
+              aantalRoutes ++;
+            } 
+            //console.log(duurRoute);
+          }
+          //console.log("aantal routes: " + aantalRoutes );
+          if(aantalRoutes == 0)
+          {
+            var empty = document.createElement('p');
+            empty.innerHTML = "Geen routes voor deze combinatie";
+            tabRoute.appendChild(empty);
+          }
+        }
+      },200);
+    }
+    else
+    {
+    console.log("select element bestaat niet");
+    }
+  }
+  
 });
 
 /*------------------Foto code-------------------------*/
@@ -1566,7 +2991,7 @@ function ScriptAndUpdateCheck()
      }
      catch(err)
      {
-       alert("eerste keer geladen true && appversion != null: " + err);
+       //alert("eerste keer geladen true && appversion != null: " + err);
        location.reload();
      }
       
@@ -1630,7 +3055,7 @@ function locateUser()
       });
     } 
 }
-var coordinateLocationInArray = 0;
+var coordinateLocationInArray = -1;
 var polylineInterval = setInterval(function()
 {
   //locateUser();
@@ -1653,10 +3078,11 @@ var polylineInterval = setInterval(function()
    
   }
 },5000);
-var current_position, current_accuracy;
+
 
 function onLocationFound(e) 
 {
+  ///////////!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!AFGELEGDE AFSTAND UPDATE DE GELE LIJN IPV DE GROENE LIJN!!!!!!!!!!!!!!!
   // if position defined, then remove the existing position marker and accuracy circle from the map
   //console.log("location found");
   if(localStorage.getItem("MapNLInitialised") == "true")
@@ -1681,6 +3107,69 @@ function onLocationFound(e)
     {
       if(polylineLines != "")
       {
+        
+        console.log(window["polyline" + (coordinateLocationInArray)]);
+        /*mymap.removeLayer(window["polyline" + (coordinateLocationInArray+1)]);
+        mymap.removeLayer(window["polyline" + (coordinateLocationInArray+2)]);*/
+        console.log("coordinateLocationInArray = " + coordinateLocationInArray);
+        var punt1;
+        var punt2;
+        //console.log(coordinatesToCalculate[i].lat);
+        punt1 = [polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]];
+        punt2 = [polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]];
+        
+        var punt1lat = JSON.parse(punt1[0]);
+        var punt1lng = JSON.parse(punt1[1]);
+        var punt2lat = JSON.parse(punt2[0]);
+        var punt2lng = JSON.parse(punt2[1]);
+        var rad = function(x) {
+          return x * Math.PI / 180;
+        };
+        var R = 6371000; // Earth’s mean radius in meter
+        var dLat = rad(punt2lat - punt1lat);
+        var dLong = rad(punt2lng - punt1lng);
+        var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(rad(punt1lat)) * Math.cos(rad(punt2lat)) *
+          Math.sin(dLong / 2) * Math.sin(dLong / 2);
+        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        var d = R * c;
+        totaldistance = totaldistance + d;
+        //-----------------------------------------------------------------------
+          
+        //console.log("coordinateLocationInArray: " +coordinateLocationInArray );
+        //  mymap.removeLayer(window["polyline" + (coordinateLocationInArray+1)]);
+        if(coordinateLocationInArray+1 !=  polylineLines.length)
+        {
+          mymap.removeLayer(window["polyline" + (coordinateLocationInArray+1)]);
+          window['polyline' + (coordinateLocationInArray+1)] = [[polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]],[polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]]];
+          window['polyline' + (coordinateLocationInArray+1)] = L.polyline( window['polyline' + (coordinateLocationInArray+1)],{color: 'lightgreen'}).addTo(mymap); 
+        }
+        else
+        {
+          totaldistance = 0;
+          console.log("route finished");
+        }
+        if((coordinateLocationInArray + 2) !=  polylineLines.length)
+        {
+          mymap.removeLayer(window["polyline" + (coordinateLocationInArray+2)]);
+          window['polyline' + (coordinateLocationInArray+2)] = [[polylineLines[coordinateLocationInArray+1][0][0], polylineLines[coordinateLocationInArray+1][0][1]],[polylineLines[coordinateLocationInArray+1][1][0], polylineLines[coordinateLocationInArray+1][1][1]]];
+          window['polyline' + (coordinateLocationInArray+2)] = L.polyline( window['polyline' + (coordinateLocationInArray+2)],{color: 'yellow'}).addTo(mymap);
+        }
+        else
+        {
+          console.log("yellow finished");
+        }
+        coordinateLocationInArray++;
+        time = time + DuurPerPolyline;
+        if(time >= 1)
+        {
+          time = time -1;
+          TotaleDuurRoute = TotaleDuurRoute -1;
+
+        }
+        document.getElementById("RouteAfgelegdeAfstand").innerHTML = (totaldistance/1000).toFixed(2)  + "km";
+        document.getElementById("RouteTotaleAfstand").innerHTML = GekozenRouteDistance;
+        document.getElementById("RouteResterendeTijd").innerHTML = TotaleDuurRoute;
         /*
         console.log("Coord1 lat = " + polylineLines[coordinateLocationInArray][0][0]);
         console.log("Coord1 long = " + polylineLines[coordinateLocationInArray][0][1]);
@@ -1698,158 +3187,209 @@ function onLocationFound(e)
         var PolylineTime = BerekenTijd(d,GekozenRouteType);
         PolylineTime = PolylineTime/60;
         */
-        if(localStorage.getItem("Reverse") == "true")
-        {
-          
-          //console.log("in reverse");
-          // ------------------------DISTANCE BEREKENEN----------------------------
-          var punt1;
-          var punt2;
-          //console.log(coordinatesToCalculate[i].lat);
-          punt1 = [polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]];
-          punt2 = [polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]];
-          
-          var punt1lat = JSON.parse(punt1[0]);
-          var punt1lng = JSON.parse(punt1[1]);
-          var punt2lat = JSON.parse(punt2[0]);
-          var punt2lng = JSON.parse(punt2[1]);
-          var rad = function(x) {
-            return x * Math.PI / 180;
-          };
-          var R = 6371000; // Earth’s mean radius in meter
-          var dLat = rad(punt2lat - punt1lat);
-          var dLong = rad(punt2lng - punt1lng);
-          var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(rad(punt1lat)) * Math.cos(rad(punt2lat)) *
-            Math.sin(dLong / 2) * Math.sin(dLong / 2);
-          var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-          var d = R * c;
-          totaldistance = totaldistance + d;
-          //-----------------------------------------------------------------------
-          mymap.removeLayer(window["polyline" + (coordinateLocationInArray+1)]);
-          //console.log("coordinateLocationInArray: " +coordinateLocationInArray );
-          //  mymap.removeLayer(window["polyline" + (coordinateLocationInArray+1)]);
-          if(coordinateLocationInArray+1 !=  polylineLines.length)
-          {
-            window['polyline' + (coordinateLocationInArray+1)] = [[polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]],[polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]]];
-            window['polyline' + (coordinateLocationInArray+1)] = L.polyline( window['polyline' + (coordinateLocationInArray+1)],{color: 'lightgreen'}).addTo(mymap); 
-          }
-          else
-          {
-            console.log("route finished");
-          }
-          if((coordinateLocationInArray + 2) !=  polylineLines.length)
-          {
-            window['polyline' + (coordinateLocationInArray+2)] = [[polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]],[polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]]];
-            window['polyline' + (coordinateLocationInArray+2)] = L.polyline( window['polyline' + (coordinateLocationInArray+2)],{color: 'yellow'}).addTo(mymap);
-          }
-          else
-          {
-            console.log("yellow finished");
-          }
-          coordinateLocationInArray++;
-          document.getElementById("RouteAfgelegdeAfstand").innerHTML = (totaldistance/1000).toFixed(2)  + "km";
-          document.getElementById("RouteTotaleAfstand").innerHTML = GekozenRouteDistance;
-          document.getElementById("RouteResterendeTijd").innerHTML = TotaleDuurRoute;
-
-        }
-        else if(localStorage.getItem("Reverse") == "false")
-        {
-          // ------------------------DISTANCE BEREKENEN----------------------------
-          var punt1;
-          var punt2;
-          //console.log(coordinatesToCalculate[i].lat);
-
-          punt1 = [polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]];
-          punt2 = [polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]];
-          
-          var punt1lat = JSON.parse(punt1[0]);
-          var punt1lng = JSON.parse(punt1[1]);
-          var punt2lat = JSON.parse(punt2[0]);
-          var punt2lng = JSON.parse(punt2[1]);
-          var rad = function(x) {
-            return x * Math.PI / 180;
-          };
-          var R = 6371000; // Earth’s mean radius in meter
-          var dLat = rad(punt2lat - punt1lat);
-          var dLong = rad(punt2lng - punt1lng);
-          var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(rad(punt1lat)) * Math.cos(rad(punt2lat)) *
-            Math.sin(dLong / 2) * Math.sin(dLong / 2);
-          var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-          var d = R * c;
-          totaldistance = totaldistance + d;
-          //-----------------------------------------------------------------------
-          mymap.removeLayer(window["polyline" + (coordinateLocationInArray+1)]);
-          //mymap.removeLayer(window["polyline" + (coordinateLocationInArray+2)]);
         
-          if(coordinateLocationInArray ==  polylineLines.length)
-          {
-            console.log("route finished");
-          }
-          else
-          {
-            window['polyline' + (coordinateLocationInArray+1)] = [[polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]],[polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]]];
-            window['polyline' + (coordinateLocationInArray+1)] = L.polyline( window['polyline' + (coordinateLocationInArray+1)],{color: 'lightgreen'}).addTo(mymap); 
-          }
-          if((coordinateLocationInArray + 2) ==  polylineLines.length)
-          {
-            console.log("yellow finished")
-          }
-          else
-          {
-            window['polyline' + (coordinateLocationInArray+2)] = [[polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]],[polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]]];
-            window['polyline' + (coordinateLocationInArray+2)] = L.polyline( window['polyline' + (coordinateLocationInArray+2)],{color: 'yellow'}).addTo(mymap);
-          }
-         
-          coordinateLocationInArray ++;
-          document.getElementById("RouteAfgelegdeAfstand").innerHTML = (totaldistance/1000).toFixed(2)  + "km";
-          document.getElementById("RouteTotaleAfstand").innerHTML = GekozenRouteDistance;
-          document.getElementById("RouteResterendeTijd").innerHTML = TotaleDuurRoute;
-          
-        }
-        time = time + DuurPerPolyline;
-        if(time >= 1)
-        {
-          time = time -1;
-          TotaleDuurRoute = TotaleDuurRoute -1;
-
-        }
+        
         //console.log("time = " + time);
         //console.log(window["polyline" + (coordinateLocationInArray+1)]);
-      
+
         /*
-        window['polyline' + (coordinateLocationInArray+1)].setStyle(
-        {
-          color: 'green'
-        });
-        */
-
-
-        /*console.log("polylineLines = " + polylineLines[0][0]);
-        console.log("yes");
-        console.log("lat = " + lat);
-        console.log("long = " + long);
-        */
-        /*if(polylineLines[coordinateLocationInArray][1][0] == lat && polylineLines[coordinateLocationInArray][1][1] == long)
+        if(polylineLines[coordinateLocationInArray][1][0] == lat && polylineLines[coordinateLocationInArray][1][1] == long)
         {
           console.log("lng: " + polylineLines[coordinateLocationInArray][1][1] + "lat" + polylineLines[coordinateLocationInArray][1][0]);
           console.log(coordinateLocationInArray);
           
 
         }
+        */
+
         if(polylineCoords[coordinateLocationInArray].lng == long && polylineCoords[coordinateLocationInArray].lat == lat)
         {
           console.log("lng: " + polylineCoords[coordinateLocationInArray].lng + "lat" + polylineCoords[coordinateLocationInArray].lat);
           console.log(coordinateLocationInArray);
-          coordinateLocationInArray ++;
+          //-----------------------------------------------------------------------------------------------
+          if(localStorage.getItem("Reverse") == "true")
+          {
+            
+            //console.log("in reverse");
+            // ------------------------DISTANCE BEREKENEN----------------------------
+            var punt1;
+            var punt2;
+            //console.log(coordinatesToCalculate[i].lat);
+            punt1 = [polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]];
+            punt2 = [polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]];
+            
+            var punt1lat = JSON.parse(punt1[0]);
+            var punt1lng = JSON.parse(punt1[1]);
+            var punt2lat = JSON.parse(punt2[0]);
+            var punt2lng = JSON.parse(punt2[1]);
+            var rad = function(x) {
+              return x * Math.PI / 180;
+            };
+            var R = 6371000; // Earth’s mean radius in meter
+            var dLat = rad(punt2lat - punt1lat);
+            var dLong = rad(punt2lng - punt1lng);
+            var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(rad(punt1lat)) * Math.cos(rad(punt2lat)) *
+              Math.sin(dLong / 2) * Math.sin(dLong / 2);
+            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            var d = R * c;
+            totaldistance = totaldistance + d;
+            //-----------------------------------------------------------------------
+            
+            //console.log("coordinateLocationInArray: " +coordinateLocationInArray );
+            //  mymap.removeLayer(window["polyline" + (coordinateLocationInArray+1)]);
+            if(coordinateLocationInArray+1 !=  polylineLines.length)
+            {
+              mymap.removeLayer(window["polyline" + (coordinateLocationInArray+1)]);
+              window['polyline' + (coordinateLocationInArray+1)] = [[polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]],[polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]]];
+              window['polyline' + (coordinateLocationInArray+1)] = L.polyline( window['polyline' + (coordinateLocationInArray+1)],{color: 'lightgreen'}).addTo(mymap); 
+            }
+            else
+            {
+              totaldistance = 0;
+              console.log("route finished");
+              localStorage.removeItem("polyline");
+              polylineLines = [];
+              polylineCoords = [];
+              coordinateLocationInArray = 0;
+              document.getElementById("mapid").style.height = "90%";
+              document.getElementById("btnRoute").style.display = 'block';
+              document.getElementById("BeforeRoute").style.display = 'none';
+              document.getElementById("RouteInfo").style.display = "none";
+              for(i in mymap._layers) 
+              {
+                if(mymap._layers[i]._path != undefined) 
+                {
+                  try 
+                  {
+                    mymap.removeLayer(mymap._layers[i]);
+                  }
+                  catch(e) 
+                  {
+                      console.log("problem with " + e + mymap._layers[i]);
+                  }
+                }
+              }
+            }
+            if((coordinateLocationInArray + 2) !=  polylineLines.length)
+            {
+              mymap.removeLayer(window["polyline" + (coordinateLocationInArray+2)]);
+              window['polyline' + (coordinateLocationInArray+2)] = [[polylineLines[coordinateLocationInArray+1][0][0], polylineLines[coordinateLocationInArray+1][0][1]],[polylineLines[coordinateLocationInArray+1][1][0], polylineLines[coordinateLocationInArray+1][1][1]]];
+              window['polyline' + (coordinateLocationInArray+2)] = L.polyline( window['polyline' + (coordinateLocationInArray+2)],{color: 'yellow'}).addTo(mymap);
+            }
+            else
+            {
+              console.log("yellow finished");
+            }
+            coordinateLocationInArray++;
+            time = time + DuurPerPolyline;
+            if(time >= 1)
+            {
+              time = time -1;
+              TotaleDuurRoute = TotaleDuurRoute -1;
+
+            }
+            document.getElementById("RouteAfgelegdeAfstand").innerHTML = (totaldistance/1000).toFixed(2)  + "km";
+            document.getElementById("RouteTotaleAfstand").innerHTML = GekozenRouteDistance;
+            document.getElementById("RouteResterendeTijd").innerHTML = TotaleDuurRoute;
+
+          }
+          else if(localStorage.getItem("Reverse") == "false")
+          {
+            // ------------------------DISTANCE BEREKENEN----------------------------
+            var punt1;
+            var punt2;
+            //console.log(coordinatesToCalculate[i].lat);
+
+            punt1 = [polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]];
+            punt2 = [polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]];
+            
+            var punt1lat = JSON.parse(punt1[0]);
+            var punt1lng = JSON.parse(punt1[1]);
+            var punt2lat = JSON.parse(punt2[0]);
+            var punt2lng = JSON.parse(punt2[1]);
+            var rad = function(x) {
+              return x * Math.PI / 180;
+            };
+            var R = 6371000; // Earth’s mean radius in meter
+            var dLat = rad(punt2lat - punt1lat);
+            var dLong = rad(punt2lng - punt1lng);
+            var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(rad(punt1lat)) * Math.cos(rad(punt2lat)) *
+              Math.sin(dLong / 2) * Math.sin(dLong / 2);
+            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            var d = R * c;
+            totaldistance = totaldistance + d;
+            //-----------------------------------------------------------------------
+            
+            if(coordinateLocationInArray+1 !=  polylineLines.length)
+            {
+              mymap.removeLayer(window["polyline" + (coordinateLocationInArray+1)]);
+              window['polyline' + (coordinateLocationInArray+1)] = [[polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]],[polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]]];
+              window['polyline' + (coordinateLocationInArray+1)] = L.polyline( window['polyline' + (coordinateLocationInArray+1)],{color: 'lightgreen'}).addTo(mymap); 
+            }
+            else
+            {
+              totaldistance = 0;
+              console.log("route finished");
+              localStorage.removeItem("polyline");
+              polylineLines = [];
+              polylineCoords = [];
+              coordinateLocationInArray = 0;
+              console.log("stop route");
+              document.getElementById("mapid").style.height = "90%";
+              document.getElementById("btnRoute").style.display = 'block';
+              document.getElementById("BeforeRoute").style.display = 'none';
+              document.getElementById("RouteInfo").style.display = "none";
+              for(i in mymap._layers) 
+              {
+                if(mymap._layers[i]._path != undefined) 
+                {
+                  try 
+                  {
+                    mymap.removeLayer(mymap._layers[i]);
+                  }
+                  catch(e) 
+                  {
+                      console.log("problem with " + e + mymap._layers[i]);
+                  }
+                }
+              }
+            }
+            if((coordinateLocationInArray + 2) !=  polylineLines.length)
+            {
+              mymap.removeLayer(window["polyline" + (coordinateLocationInArray+2)]);
+              window['polyline' + (coordinateLocationInArray+2)] = [[polylineLines[coordinateLocationInArray+1][0][0], polylineLines[coordinateLocationInArray+1][0][1]],[polylineLines[coordinateLocationInArray+1][1][0], polylineLines[coordinateLocationInArray+1][1][1]]];
+              window['polyline' + (coordinateLocationInArray+2)] = L.polyline( window['polyline' + (coordinateLocationInArray+2)],{color: 'yellow'}).addTo(mymap);
+            }
+            else
+            {
+              console.log("yellow finished");
+            }
+          
+            coordinateLocationInArray ++;
+            time = time + DuurPerPolyline;
+            if(time >= 1)
+            {
+              time = time -1;
+              TotaleDuurRoute = TotaleDuurRoute -1;
+
+            }
+            document.getElementById("RouteAfgelegdeAfstand").innerHTML = (totaldistance/1000).toFixed(2)  + "km";
+            document.getElementById("RouteTotaleAfstand").innerHTML = GekozenRouteDistance;
+            document.getElementById("RouteResterendeTijd").innerHTML = TotaleDuurRoute;
+            
+          }
+          //-----------------------------------------------------------------------------------------------
+
         }
         else
         {
+          console.log(polylineCoords[coordinateLocationInArray]);
           console.log("volgende coordinaten niet bereikt dus blijft bij: " + coordinateLocationInArray);
           //console.log("lng: " + polylineCoords[coordinateLocationInArray].lng + "lat" + polylineCoords[coordinateLocationInArray].lat);
           //coordinateLocationInArray ++;
-        }*/
+        }
       }
       //kijken of de gebruiker op de bepaalde coordinaten is om de polyline achter hem groen te maken
       
@@ -1868,7 +3408,7 @@ function onLocationFound(e)
   
 }
 function onLocationError(e) {
-  console.log("Location error: " + e);
+  console.log("Location error: " + JSON.stringify(e));
 }
 function RouteDistanceBerekenen(coordinates)
 {
@@ -1909,57 +3449,291 @@ function RouteDistanceBerekenen(coordinates)
 }
 function ReverseRoute()
 {
+  var endOfRoute = coords.length;
   if(localStorage.getItem("Reverse") == "true")
   {
+    mymap.removeLayer(window["polyline" + (1)]);
+    mymap.removeLayer(window["polyline" + (2)]);
+    mymap.removeLayer(window["polyline" + (endOfRoute-1)]);
+    mymap.removeLayer(window["polyline" + (endOfRoute-2)]);
+    window['polyline' + (endOfRoute-1)] = [[coords[endOfRoute-2].lat, coords[endOfRoute-2].lng],[coords[endOfRoute-1].lat, coords[endOfRoute-1].lng]];
+    window['polyline' + (endOfRoute-1)] = L.polyline( window['polyline' +(endOfRoute-1)]).addTo(mymap); 
+    window['polyline' + (endOfRoute-1)].setStyle(
+    {
+      color: 'yellow'
+    }); 
+    window['polyline' + (endOfRoute-2)] = [[coords[endOfRoute-3].lat, coords[endOfRoute-3].lng],[coords[endOfRoute-2].lat, coords[endOfRoute-2].lng]];
+    window['polyline' + (endOfRoute-2)] = L.polyline( window['polyline' + (endOfRoute-2)]).addTo(mymap); 
+    window['polyline' + (endOfRoute-2)].setStyle(
+    {
+      color: 'yellow'
+    }); 
+
+    
+    window['polyline' + 1] = [[coords[0].lat, coords[0].lng],[coords[1].lat, coords[1].lng]];
+    window['polyline' + 1] = L.polyline( window['polyline' + 1]).addTo(mymap); 
+    window['polyline' + 1].setStyle(
+    {
+      color: 'orange'
+    }); 
+    window['polyline' + 2] = [[coords[1].lat, coords[1].lng],[coords[2].lat, coords[2].lng]];
+    window['polyline' + 2] = L.polyline( window['polyline' + 2]).addTo(mymap); 
+    window['polyline' + 2].setStyle(
+    {
+      color: 'orange'
+    }); 
+
+
     localStorage.setItem("Reverse","false");
     mymap.removeLayer(StartMarker);
     coords.reverse();
-    StartMarker = L.marker([coords[0].lat,coords[0].lng], {icon: greenIcon});
+    StartMarker = L.marker([coords[0].lat,coords[0].lng], {icon: StartIcon});
     mymap.addLayer(StartMarker);
     polylineLines.reverse();
   }
   else if(localStorage.getItem("Reverse") == "false")
   {
+
+    mymap.removeLayer(window["polyline" + (1)]);
+    mymap.removeLayer(window["polyline" + (2)]);
+    window['polyline' + 1] = [[coords[0].lat, coords[0].lng],[coords[1].lat, coords[1].lng]];
+    window['polyline' + 1] = L.polyline( window['polyline' + 1]).addTo(mymap); 
+    window['polyline' + 1].setStyle(
+    {
+      color: 'orange'
+    }); 
+    window['polyline' + 2] = [[coords[1].lat, coords[1].lng],[coords[2].lat, coords[2].lng]];
+    window['polyline' + 2] = L.polyline( window['polyline' + 2]).addTo(mymap); 
+    window['polyline' + 2].setStyle(
+    {
+      color: 'orange'
+    }); 
+
+    mymap.removeLayer(window["polyline" + (endOfRoute-1)]);
+    mymap.removeLayer(window["polyline" + (endOfRoute-2)]);
+    window['polyline' + (endOfRoute-1)] = [[coords[endOfRoute-2].lat, coords[endOfRoute-2].lng],[coords[endOfRoute-1].lat, coords[endOfRoute-1].lng]];
+    window['polyline' + (endOfRoute-1)] = L.polyline( window['polyline' +(endOfRoute-1)]).addTo(mymap); 
+    window['polyline' + (endOfRoute-1)].setStyle(
+    {
+      color: 'yellow'
+    }); 
+    window['polyline' + (endOfRoute-2)] = [[coords[endOfRoute-3].lat, coords[endOfRoute-3].lng],[coords[endOfRoute-2].lat, coords[endOfRoute-2].lng]];
+    window['polyline' + (endOfRoute-2)] = L.polyline( window['polyline' + (endOfRoute-2)]).addTo(mymap); 
+    window['polyline' + (endOfRoute-2)].setStyle(
+    {
+      color: 'yellow'
+    }); 
+    
+
     localStorage.setItem("Reverse","true");
     mymap.removeLayer(StartMarker);
     coords.reverse();
-    StartMarker = L.marker([coords[0].lat,coords[0].lng], {icon: greenIcon});
+    StartMarker = L.marker([coords[0].lat,coords[0].lng], {icon: StartIcon});
     mymap.addLayer(StartMarker);
     polylineLines.reverse();
+
   }
 }
 function StartRoute()
 {
-  document.getElementById("BeforeRoute").style.display = 'none';
-  document.getElementById("RouteInfo").style.display = 'block';
+ 
+  if(localStorage.getItem("GeselecteerdeTaal") == "NL")
+  {
+    if (Framework7.device.ios) 
+    {
+      document.getElementsByClassName("RouteInfoNL")[0].style.marginTop = "-29%";
+    }
+    else
+    {
+      document.getElementsByClassName("RouteInfoNL")[0].style.marginTop = "-22%";
+    }
+    document.getElementsByClassName("DuringRouteNameNL")[0].innerHTML = localStorage.getItem("GekozenRouteName");
+    document.getElementsByClassName("BeforeRouteNL")[0].style.display = 'none';
+    document.getElementsByClassName("RouteInfoNL")[0].style.display = 'block';
+  }
+  else if(localStorage.getItem("GeselecteerdeTaal") == "FR")
+  {
+    if (Framework7.device.ios) 
+    {
+      document.getElementsByClassName("RouteInfoFR")[0].style.marginTop = "-29%";
+    }
+    else
+    {
+      document.getElementsByClassName("RouteInfoFR")[0].style.marginTop = "-22%";
+    }
+    document.getElementsByClassName("DuringRouteNameFR")[0].innerHTML = localStorage.getItem("GekozenRouteName");
+    document.getElementsByClassName("BeforeRouteFR")[0].style.display = 'none';
+    document.getElementsByClassName("RouteInfoFR")[0].style.display = 'block';
+  }
+  else if(localStorage.getItem("GeselecteerdeTaal") == "ENG")
+  {
+    if (Framework7.device.ios) 
+    {
+      document.getElementsByClassName("RouteInfoENG")[0].style.marginTop = "-29%";
+    }
+    else
+    {
+      document.getElementsByClassName("RouteInfoENG")[0].style.marginTop = "-22%";
+    }
+    document.getElementsByClassName("DuringRouteNameENG")[0].innerHTML = localStorage.getItem("GekozenRouteName");
+    document.getElementsByClassName("BeforeRouteENG")[0].style.display = 'none';
+    document.getElementsByClassName("RouteInfoENG")[0].style.display = 'block';
+  }
   localStorage.setItem("RouteStart","true");
   coordinateLocationInArray = 0;
   mymap.removeLayer(StartMarker);
 }
 function StopRoute()
 {
-  polylineLines = [];
   console.log("stop route");
-  document.getElementById("mapid").style.height = "90%";
-  document.getElementById("btnRoute").style.display = 'block';
-  document.getElementById("BeforeRoute").style.display = 'none';
-  document.getElementById("RouteInfo").style.display = "none";
-  for(i in mymap._layers) 
+  if(localStorage.getItem("GeselecteerdeTaal") == "NL")
   {
-    if(mymap._layers[i]._path != undefined) 
-    {
-      try 
-      {
-        mymap.removeLayer(mymap._layers[i]);
-      }
-      catch(e) 
-      {
-          console.log("problem with " + e + mymap._layers[i]);
-      }
-    }
+    document.getElementById("mapidNL").style.height = "90%";
+    document.getElementsByClassName("btnRouteNL")[0].style.display = "block";
+    document.getElementsByClassName("BeforeRouteNL")[0].style.display = 'none';
+    document.getElementsByClassName("KiesRouteDivNL")[0].style.display = 'block';
+    document.getElementsByClassName("RouteInfoNL")[0].style.display = "none";
   }
+  else if(localStorage.getItem("GeselecteerdeTaal") == "FR")
+  {
+    document.getElementById("mapidFR").style.height = "90%";
+    document.getElementsByClassName("btnRouteFR")[0].style.display = "block";
+    document.getElementsByClassName("BeforeRouteFR")[0].style.display = 'none';
+    document.getElementsByClassName("KiesRouteDivFR")[0].style.display = 'block';
+    document.getElementsByClassName("RouteInfoFR")[0].style.display = "none";
+  }
+  else if(localStorage.getItem("GeselecteerdeTaal") == "ENG")
+  {
+    document.getElementById("mapidENG").style.height = "90%";
+    document.getElementsByClassName("btnRouteENG")[0].style.display = "block";
+    document.getElementsByClassName("BeforeRouteENG")[0].style.display = 'none';
+    document.getElementsByClassName("KiesRouteDivENG")[0].style.display = 'block';
+    document.getElementsByClassName("RouteInfoENG")[0].style.display = "none";
+    
+  }
+  mymap.removeLayer(StartMarker);
+  var aantalLines = localStorage.getItem("polyline").length;
+  for(var key in window)
+  {
+    if(key.includes("polyline"))
+    {
+      if(hasNumber.test(key) == true)
+      {
+        if(window[key].options.color == "yellow" || window[key].options.color == "orange" || window[key].options.color == "lightgreen")
+        {
+          mymap.removeLayer(window[key]);
+        }
+        //console.log(key);
+      }
+      //console.log("y = " + key);
+    }
+    else
+    {
+
+    }
+    
+  }
+  polylineLines = [];
+  polylineCoords = [];
+  coords = [];
+  totaldistance = 0;
+  coordinateLocationInArray = 0;
+  localStorage.removeItem("polyline");
 }
 navigator.geolocation.watchPosition(onLocationFound, onLocationError, {
   maximumAge: 1000,
   timeout: 2000
 });
+function MeldProbleem()
+{
+  if(localStorage.getItem("InternetStatus") == "Online")
+  {
+    
+    app.dialog.progress('Mail versturen');
+    var div = document.getElementById("emailScript");
+    var firebaseScript1 = document.createElement("script");
+    firebaseScript1.src = "https://smtpjs.com/v3/smtp.js";
+    div.appendChild(firebaseScript1);
+    app.dialog.close();
+  }
+  else
+  {
+    alert("Gelieve uw 4G aan te zetten");
+  }
+  var title = document.getElementById("titelInput").value;
+  var bescrhijving = document.getElementById("bescrhijving").value;
+  var locationShare;
+  if(document.querySelector('#opta:checked') !== null)
+  {
+    locationShare = "true";
+    console.log("checked");
+    console.log("title = " + title);
+    console.log("bescrhijving = " + bescrhijving);
+    Email.send({
+      Host: "smtp.gmail.com",
+      Username : "driesvanransbeeck15@gmail.com",
+      Password : "",
+      To : 'dries.van.ransbeeck@hotmail.com',
+      From : "driesvanransbeeck15@gmail.com",
+      Subject : title,
+      Body : bescrhijving,
+      }).then(
+         alert("mail sent successfully")
+      );
+  }
+  else
+  {
+    console.log("not checked");
+  }
+  
+}
+function LanuageChange(id)
+{
+  
+  localStorage.setItem("GeselecteerdeTaal",id);
+  localStorage.setItem("MapNLInitialised","false");
+  localStorage.setItem("MapFRInitialised","false");
+  try
+  {
+    mymap.removeLayer(StartMarker);
+  }
+  catch(err)
+  {
+    console.log("language change err: " + err);
+  }
+  try
+  {
+    for(var key in window)
+    {
+      if(key.includes("polyline"))
+      {
+        if(hasNumber.test(key) == true)
+        {
+          if(window[key].options.color == "yellow" || window[key].options.color == "orange" || window[key].options.color == "lightgreen")
+          {
+            mymap.removeLayer(window[key]);
+          }
+          //console.log(key);
+        }
+        //console.log("y = " + key);
+      }
+      else
+      {
+  
+      }
+    }
+  }
+  catch(err)
+  {
+    console.log("language change polyline err: " + err);
+
+  }
+ 
+  polylineLines = [];
+  polylineCoords = [];
+  coords = [];
+  totaldistance = 0;
+  coordinateLocationInArray = 0;
+  localStorage.removeItem("polyline");
+
+}

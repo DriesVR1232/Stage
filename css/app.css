@@ -65,7 +65,7 @@
   margin-top: 0%;
 }
 .vl {
-  /*border-left: 6px solid green;*/
+  border-left: 6px solid #ffe43c;
   height: 100%;
 }
 
@@ -85,8 +85,348 @@ background-color: #207454 !important;
 {
   background-color: #e08c24;
 }
+#heritageImage
+{
+  display: none;
+}
+.leaflet-tooltip-pane .text {
+  font-weight: bold;
+  background: transparent;
+  border:0;
+  box-shadow: none;
+  font-size:2em;
+}
+/*.leaflet-control-layers-toggle{
+  background-color: #e08c24;
+}
+*/
+.RouteNaam
+{
+  float: left;
+  width: 92%;
+  background-color: #97AB90;
+  height: 1.7em;
+}
 
 
+.CloseRoute
+{
+  float: right;
+  background-color: #e08c24;
+  width: 8%;
+  text-align: center;
+  height: 1.7em;
+}
+.testest
+{
+  vertical-align: middle;
+  line-height: 1.7em;
+  margin-top: -0.1em;
+}
+
+.StartRoute
+{
+  float: left;
+  width: 60%;
+  background-color: #e08c24;
+  margin-left: 4em;
+  text-align: center;
+  margin-top: 2.5%;
+  height: 2.5em;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+  vertical-align: middle;
+  line-height: 2.5em;
+  
+}
+
+.ReverseRoute
+{
+  float: right;
+  width: 15%;
+  background-color: #e08c24;
+  margin-right: 2em;
+  margin-top: 2.5%;
+  height: 2.5em;
+  text-align: center;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+  vertical-align: middle;
+  line-height: 2.2em;
+}
+.AfgelegeAfstand
+{
+  margin-left: 0.5em;
+}
+.ResterendeDuur
+{
+  margin-left: 0.5em;
+}
+.AfgelegeAfstandText
+{
+  text-align: center;
+}
+.AfstandEnTijd
+{
+  float: right;
+  width: 80%;
+  margin-bottom: -5em;
+  top: 0;
+  margin-top: -1em;
+  margin-right: 1em;
+}
+.KaartDiv
+{
+  height: 100%;
+  width: 100%;
+  
+}
+@media (max-height: 600px)
+{
+  .StartRoute
+  {
+    float: left;
+    width: 60%;
+    background-color: #e08c24;
+    margin-left: 3em;
+    text-align: center;
+    margin-top: 2.5%;
+    height: 2.5em;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    vertical-align: middle;
+    line-height: 2.5em;
+    
+  }
+  .RouteNaam
+  {
+    float: left;
+    width: 92%;
+    background-color: #97AB90;
+    height: 1.7em;
+    margin-top: 7%;
+  }
+  .CloseRoute
+  {
+    float: right;
+    background-color: #e08c24;
+    width: 8%;
+    text-align: center;
+    height: 1.7em;
+    margin-top: 7%;
+  }
+  .ReverseRoute
+  {
+    margin-top: -2%;
+  }
+}
+@media(max-height: 650px)
+{
+  .RouteNaam
+  {
+    float: left;
+    width: 92%;
+    background-color: #97AB90;
+    height: 1.7em;
+  }
+  .CloseRoute
+  {
+    float: right;
+    background-color: #e08c24;
+    width: 8%;
+    text-align: center;
+    height: 1.7em;
+
+  }
+  .StartRoute
+  {
+    display: block;
+    margin-top: 5%;
+  }
+  .ReverseRoute
+  {
+    margin-top: 50px auto;
+  }
+
+}
+@media(max-height: 700px)
+{
+  .RouteNaam
+  {
+    float: left;
+    width: 92%;
+    background-color: #97AB90;
+    height: 1.7em;
+  }
+  .CloseRoute
+  {
+    float: right;
+    background-color: #e08c24;
+    width: 8%;
+    text-align: center;
+    height: 1.7em;
+
+  }
+  .StartRoute
+  {
+    margin-top: 5%;
+  }
+  .ReverseRoute
+  {
+    margin-top: 5%;
+  }
+}
+@media (min-height: 700px)
+{
+  .RouteNaam
+  {
+    float: left;
+    width: 92%;
+    background-color: #97AB90;
+    height: 1.7em;
+    margin-top: -1%;
+  }
+  .CloseRoute
+  {
+    float: right;
+    background-color: #e08c24;
+    width: 8%;
+    text-align: center;
+    height: 1.7em;
+    margin-top: -1%;
+  }
+  .RouteContent
+  {
+    margin-top: 10%;
+  }
+}
+@media (min-height: 800px)
+{
+  .RouteNaam
+  {
+    float: left;
+    width: 92%;
+    background-color: #97AB90;
+    height: 1.7em;
+    margin-top: 0.3%;
+  }
+  .CloseRoute
+  {
+    float: right;
+    background-color: #e08c24;
+    width: 8%;
+    text-align: center;
+    height: 1.7em;
+    margin-top: 0.3%;
+
+  }
+  .AfstandEnTijd
+  {
+    margin-top: 2.5%;
+  }
+  .AfgelegeAfstand
+  {
+    margin-top: 2.5%;
+    /*margin-left: 10%;*/
+  }
+  .StartRoute
+  {
+    margin-top: 7%;
+  }
+  .ReverseRoute
+  {
+    margin-top: 7%;
+  }
+}
+@media (min-height: 813px )
+{
+  .RouteNaam
+  {
+    float: left;
+    width: 92%;
+    background-color: #97AB90;
+    height: 1.7em;
+    margin-top: -4%;
+  }
+  .CloseRoute
+  {
+    float: right;
+    background-color: #e08c24;
+    width: 8%;
+    text-align: center;
+    height: 1.7em;
+    margin-top: -4%;
+  }
+  .AfgelegeAfstandText
+  {
+    margin-top: -4%;
+  }
+  .ResterendeDuur
+  {
+    margin-top: -1%;
+  }
+  .AfgelegeAfstand
+  {
+    margin-top: -1%;
+    /*margin-left: 10%;*/
+  }
+  .StartRoute
+  {
+    margin-top: 5%;
+  }
+  .ReverseRoute
+  {
+    margin-top: 5%;
+  }
+
+}
+.btnRoute
+{
+  height: 6%;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+  color: white;
+  position:relative;
+  top:20%;
+}
+#mapidFR
+{
+  height: 90%; 
+  width: 100%
+}
+#mapidNL
+{
+  height: 90%; 
+  width: 100%
+}
+#mapidENG
+{
+  height: 90%; 
+  width: 100%
+}
+.KiesRoute
+{
+  width: 80%;
+  background-color: #e08c24;
+  margin-left: 10%;
+  margin-right: 10%;
+  margin-top: 3%;
+  height: 6%;
+  text-align: center;
+  vertical-align: middle;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
 
 .material-icons {
   font-family: 'Material Icons';

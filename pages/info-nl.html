@@ -32,7 +32,7 @@
       <a href="info-nl" class="tab-link tab-link-active">
         <i class="icon f7-icons if-not-md">doc_fill</i>
         <i class="icon material-icons md-only">description</i>
-        <span class="tabbar-label">Encyclopedy</span>
+        <span class="tabbar-label">Encyclopedie</span>
       </a>
     </div>
   </div>
@@ -92,7 +92,7 @@
           <li>
             <a href="/faunaFlora-nl/" class="item-link item-content">
               <div class="item-media">
-                <img src=".\img/fauna.jpg" width="80" />
+                <img src=".\img/FaunaFlora.jpg" width="80" />
               </div>
               <div class="item-inner">
                 <div class="item-title-row">
@@ -105,7 +105,7 @@
           <li>
             <a href="/toegangspoorten-nl/" class="item-link item-content">
               <div class="item-media">
-                <img src=".\img/toegangspoort.jpg" width="80" />
+                <img src=".\img/toegangspoort.jpeg" width="80" />
               </div>
               <div class="item-inner">
                 <div class="item-title-row">
@@ -118,7 +118,7 @@
           <li>
             <a href="/about-nl/" class="item-link item-content">
               <div class="item-media">
-                <img src=".\img/erfgoed.jpg" width="80" />
+                <img src=".\img/AboutTheForest.jpg" width="80" />
               </div>
               <div class="item-inner">
                 <div class="item-title-row">
@@ -152,63 +152,93 @@
       </div>
       -->
         <!-- Code voor de popup -->
-      <div class="popup popup-melding">
-        <div class="view">
-          <div class="page">
-            <div class="navbar">
-              <div class="navbar-inner">
-                <div class="title"></div>
-                <div class="right">
-                  <!-- Link to close popup -->
-                  <a class="link popup-close"><img src=".\img/close-icon.png"></a>
+        <div class="popup popup-melding">
+          <div class="view">
+            <div class="page">
+              <div class="page-content">
+                <a class="link popup-close"><img src=".\img/close-icon.png"></a>
+                <div class="Overkoepelend">
+                  <div class="titelMeldProbleem">Meld een probleem</div>
+                  <div class="bovenkant">
+                    <div class="binnenbovenkant">
+                      <div class="dropdowndiv">
+                        <span class="custom-dropdown-second big-2 probleemdropdown">
+                          <select>
+                            <option>Feedback</option>
+                            <option>Tijd</option>
+                          </select>
+                        </span>
+                      </div>
+                      <div class="titeldiv">
+                        <label class="titel">Titel: &nbsp;</label>
+                        <input type="text" class="titelInput" id="titelInput" placeholder="typ hier een titel" />
+                      </div>
+                    </div>
+                    <div class="imagediv">
+                      <img id="uploadimage" src=".\img/stockAfbeelding.jpg" onclick="test()">
+                      <input type="file" accept="image/*" id="cameraInput" onchange="readURL(this);">
+                    </div>
+                  </div>
+                  <div class="midden">
+                    <label>Beschrijving:</label>
+                    <textarea placeholder="Bio" id="bescrhijving" placeholder="textarea" rows="16" cols="50" style="background-color:white; width: 95%;"></textarea>
+                  </div>
+                  <hr class="hr">
+                  <div class="onderkant">
+                    <div class="checkboxdiv">
+                      <input  type="checkbox" name="optiona" id="opta" class="checkbox" checked />
+                      <span class="textcheckbox">
+                        Locatie delen?
+                        <i style="font-size: 20px" class="icon f7-icons icon-tooltip if-not-md tooltip-NLEncie"><img src=".\img/tooltip.png" style="height: 100%;width: 100%;"></i>
+                        <i style="font-size: 20px" class="icon material-icons icon-tooltip if-md tooltip-NLEncie"><img src=".\img/tooltip.png"style="height: 100%;width: 100%;"></i>
+                      </span>
+                    </div>
+                    <div class="onderbutton">
+                      <a href="#" class="button button-large button-fill probleemButton" onclick="MeldProbleem()">
+                        <span>Verstuur</span>
+                        </a>
+                    </div>
+                  </div>
+                  <!--<div class="">
+                <span class="custom-dropdown-second big-2 probleemdropdown">
+                  <select>    
+                      <option>Feedback</option>
+                      <option>Tijd</option>  
+                  </select>
+                </span> 
+              </div>
+              <div class=""> 
+                <label class="titel">Titel: &nbsp;</label>
+                  <input type="text" class="titel titelInput" placeholder="typ hier een titel"/>
+                
+              </div>
+              <div class="">
+                <input type="file" accept="image/*" capture="camera" id="cameraInput">
+                <img id="uploadimage" style="width: 50%; height: 50%;">
+              </div>
+              <div class="">
+                <label>Beschrijving:</label>
+                <textarea class="resizable" placeholder="Bio" placeholder="textarea" rows="8" cols="50"></textarea>
+              </div>
+              <div class="">
+                <hr class="hritem">
+                <div class="checkboxdiv">
+                  <input  type="checkbox" name="optiona" id="opta" checked />
+                  <span class="locatietitle">
+                    Locatie delen
+                  </span>
+                </div>
+              </div>
+              <div class="">
+                <a href="#" class="button button-large button-fill probleemButton">
+                <span>Verstuur</span>
+                </a>
+              </div>
+            -->
                 </div>
               </div>
             </div>
-            <div class="page-content">
-              <div class="grid-container">
-                <div class="grid-item-titel item1 "><h1>Meld een probleem</h1></div>
-                <div class="grid-item-dropdown item2 ">
-                  <span class="custom-dropdown-second big-2">
-                    <select>    
-                        <option>Feedback</option>
-                        <option>Tijd</option>  
-                    </select>
-                  </span> 
-                </div>
-                <div class="grid-item-input item3 "> 
-                  <label class="titel">Titel: &nbsp;</label>
-                  <input type="text" class="titel" placeholder="typ hier een bericht"/>
-                </div>
-                <div class="grid-item-foto item4 ">
-                  <input type="file" accept="image/*" capture="camera" id="cameraInput">
-                  <img id="uploadimage" style="width: 50%; height: 50%;">
-
-                  
-                </div>
-                <div class="grid-item-text item5 ">
-                  <label>Beschrijving:</label>
-                  <textarea class="resizable" placeholder="Bio" placeholder="textarea"></textarea>
-
-                </div>
-                <div class="grid-item-checbox item6 ">
-                  <label class="item-checkbox item-content">
-                    <input type="checkbox"  value="Books" checked="checked" />
-                    <i class="icon icon-checkbox"></i>
-                    <div class="item-inner">
-                      <div class="item-title">Locatie delen</div>
-                    </div>
-                  </label>
-                </div>
-                <div class="grid-item-button item7 ">
-                  <a href="#" class="button button-large button-fill ">
-                  <span>Verstuur</span>
-                  </a>
-                </div>
-              
-              </div>
           </div>
         </div>
-      </div>
-    </div>
   </div>
 </div>
