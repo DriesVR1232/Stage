@@ -40,7 +40,7 @@ try{
   }
   else if(localStorage.getItem("GeselecteerdeTaal") == "ENG")
   {
-    console.log("frans geselecteerd");
+    console.log("engels geselecteerd");
     app.views.main.router.navigate("/index-eng/");
   }
   localStorage.setItem("Framework7Initialised", "true");
@@ -65,7 +65,7 @@ function onBackKeyDown() {
 });
 */
 /*firebase initialisation*/
-var firebaseConfig, database, storage, mymap, polylineCoords, lat, long, polyline, coords, current_position, current_accuracy;;
+var firebaseConfig, database, storage, mymapNL, mymapFR, mymapENG, polylineCoords, lat, long, polyline, coords, current_position, current_accuracy, punt1Lat, punt1Lng, punt2Lat, punt2Lng;
 var polylineLines = [];
 var polylineNames = [];
 var totaldistance = 0;
@@ -149,6 +149,7 @@ function Setup()
 {
   localStorage.setItem("MapNLInitialised","false");
   localStorage.setItem("MapFRInitialised","false");
+  localStorage.setItem("MapENGInitialised","false");
   localStorage.removeItem("polyline");
   if(localStorage.getItem("reloaded") == null)
   {
@@ -568,11 +569,32 @@ function infoOphalen()
                 .then( json => console.log(json) )
                 .catch( error => console.log('error:', error) );
                 */
-
+               /*var xhr = new XMLHttpRequest();
+               xhr.open("GET", url, true);
+               xhr.onload = function (e) 
+               {
+                if (xhr.readyState === 4) 
+                {
+                  if (xhr.status === 200) 
+                  {
+                    console.log("gelukt");
+                    //console.log(xhr.responseText);
+                  } 
+                  else 
+                  {
+                    console.error(xhr.statusText);
+                  }
+                }
+               };
+               xhr.onerror = function (e) {
+                console.error(xhr.statusText);
+              };
+              xhr.send(null); 
+              */
 
                 /* set up async GET request */
                 var req = new XMLHttpRequest();
-                req.open("GET", url, true);
+               
                 req.responseType = "arraybuffer";
                 
                 req.onload = function(e) 
@@ -589,8 +611,6 @@ function infoOphalen()
                   {
                     alert("excel sheets error" + err);
                   }
-                 
-
                   for (var i = 0; i < numberOfSheets; i++) 
                   {
                     //console.log("ingeladen route: " + value.uniqueName);  
@@ -633,6 +653,7 @@ function infoOphalen()
                  
                   //console.log(value.uniqueName +"RoutePoints");
                 };
+                req.open("GET", url, true);
                 req.send();
               }
               catch(err)
@@ -1023,6 +1044,7 @@ function Kaart()
     var mapLoad = "";
     //mymap.remove();
     mapLoad = "\map/{z}/{x}/{y}.png";
+    //mapLoad = "https://api.mapbox.com/styles/v1/groenestapstenenvzw/cjsa2ljft5tgs1ftdjcqr09mo/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZ3JvZW5lc3RhcHN0ZW5lbnZ6dyIsImEiOiJjanMwNzNiN2MwMDhmNGFrdm9pZTlidzhzIn0.9eaZs-fbZSyygtfnyqUEIQ";
     var mapElementInterval = setInterval(function()
     {  
       var elementExists = document.getElementById("mapidNL");
@@ -1030,7 +1052,7 @@ function Kaart()
       {
         try
         {
-          mymap.remove();
+          mymapNL.remove();
           console.log("map removed");
         }
         catch(err)
@@ -1042,26 +1064,18 @@ function Kaart()
         console.log("element bestaat");
         //----------------------------------------------------------------------------------------------
         //var mapboxUrl = "https://api.mapbox.com/styles/v1/groenestapstenenvzw/cjsa2ljft5tgs1ftdjcqr09mo/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZ3JvZW5lc3RhcHN0ZW5lbnZ6dyIsImEiOiJjanMwNzNiN2MwMDhmNGFrdm9pZTlidzhzIn0.9eaZs-fbZSyygtfnyqUEIQ";
-        /*leaflet code*/
-        mymap = L.map('mapidNL',
+        mymapNL = L.map('mapidNL',
         {
-          maxBounds: [
-              //south west
-              [50.680033, 4.313562],
-              //north east
-              [50.877788, 4.605838]
-            ] 
-          }).setView([50.791487, 4.448756], 13);
+        }).setView([50.791487, 4.448756], 13);
         L.tileLayer(mapLoad, {
         //L.tileLayer('https://api.mapbox.com/styles/v1/groenestapstenenvzw/cjsa2ljft5tgs1ftdjcqr09mo/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZ3JvZW5lc3RhcHN0ZW5lbnZ6dyIsImEiOiJjanMwNzNiN2MwMDhmNGFrdm9pZTlidzhzIn0.9eaZs-fbZSyygtfnyqUEIQ', {
           maxZoom: 16,
           minZoom: 11,
           tileSize: 512,
           zoomOffset: -1,
-        }).addTo(mymap);
+        }).addTo(mymapNL);
         //mymap.on('load', () => console.log(map.getCanvas().toDataURL()));
-        
-        mymap.locate(
+        mymapNL.locate(
         {
           setView: false, 
           maxZoom: 16, 
@@ -1087,21 +1101,20 @@ function Kaart()
             {
               var boomtestcontent =`
               <div class="card demo-card-header-pic">
-              <a href="/Event/">
-              <div style="background-image:url(` + cursor[i].value.imagename +`)"
-                class="card-header align-items-flex-end"></div>
-              </a>
-              <div class="card-content card-content-padding">
-                <p class="date">` + cursor[i].value.name.nl +`</p>
-                <p>` +cursor[i].value.longtext.nl +`</p>
-              </div>
+                <div style="background-image:url(` + cursor[i].value.imagename +`)"
+                  class="card-header align-items-flex-end">
+                </div>
+                <div class="card-content card-content-padding">
+                  <p class="date">` + cursor[i].value.name.nl +`</p>
+                  <p>` +cursor[i].value.longtext.nl +`</p>
+                </div>
               </div>
               `;
               var marker = new L.marker([cursor[i].value.latitude, cursor[i].value.longitude], {icon: HeritageIcon}).bindPopup(boomtestcontent);
               heritageLayerGroup.addLayer(marker);
             }
             
-            L.control.layers(null, overlay).addTo(mymap);
+            
             
             //console.log("Heritage info = " + JSON.stringify(cursor.value,null,2));
             //cursor.continue();
@@ -1125,17 +1138,6 @@ function Kaart()
               radius: 500
           }).bindPopup(heritageContent);
           //var gateMarker = new L.marker([gatesInfo[i].latitude, gatesInfo[i].longitude], {icon: GateIcon}).bindPopup(heritageContent);
-          /*-----------------------code voor tooltip in het midden van de cirkel
-          var text = L.tooltip(
-            {
-              permanent: true,
-              direction: 'center',
-              className: 'text'
-            })
-          .setContent(gatesInfo[i].name.nl)
-          .setLatLng([gatesInfo[i].latitude, gatesInfo[i].longitude]);
-          gatesLayerGroup.addLayer(text);
-          */
           gatesLayerGroup.addLayer(marker);
         }
 
@@ -1193,7 +1195,7 @@ function Kaart()
           'Horeca' : HorecaLayerGroup,
           'Fietsen parking' : BikeParkingLayerGroup
         }; 
-
+        L.control.layers(null, overlay).addTo(mymapNL);
         //----------------------------------------------------------------------------------------
       }
       else
@@ -1201,7 +1203,7 @@ function Kaart()
         console.log("element bestaat niet");
       }
     }, 200);
-
+    
     /*
     var internetCheck = setInterval(function()
     {
@@ -1224,6 +1226,7 @@ function Kaart()
     }, 2000);  
     */
   }
+
   else if(localStorage.getItem("GeselecteerdeTaal") == "FR")
   {
     console.log("in franse deel");
@@ -1247,11 +1250,11 @@ function Kaart()
         }
         
         clearInterval(mapElementInterval);
+        localStorage.setItem("MapFRInitialised","true");
         console.log("element bestaat");
         //----------------------------------------------------------------------------------------------
         //var mapboxUrl = "https://api.mapbox.com/styles/v1/groenestapstenenvzw/cjsa2ljft5tgs1ftdjcqr09mo/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZ3JvZW5lc3RhcHN0ZW5lbnZ6dyIsImEiOiJjanMwNzNiN2MwMDhmNGFrdm9pZTlidzhzIn0.9eaZs-fbZSyygtfnyqUEIQ";
-        /*leaflet code*/
-        mymap = L.map('mapidFR',
+        mymapFR = L.map('mapidFR',
         {
           maxBounds: [
               //south west
@@ -1266,10 +1269,10 @@ function Kaart()
           minZoom: 11,
           tileSize: 512,
           zoomOffset: -1,
-        }).addTo(mymap);
+        }).addTo(mymapFR);
         //mymap.on('load', () => console.log(map.getCanvas().toDataURL()));
         
-        mymap.locate(
+        mymapFR.locate(
         {
           setView: false, 
           maxZoom: 16, 
@@ -1295,21 +1298,20 @@ function Kaart()
             {
               var boomtestcontent =`
               <div class="card demo-card-header-pic">
-              <a href="/Event/">
-              <div style="background-image:url(` + cursor[i].value.imagename +`)"
-                class="card-header align-items-flex-end"></div>
-              </a>
-              <div class="card-content card-content-padding">
-                <p class="date">` + cursor[i].value.name.fr +`</p>
-                <p>` +cursor[i].value.longtext.fr +`</p>
-              </div>
+                <div style="background-image:url(` + cursor[i].value.imagename +`)"
+                  class="card-header align-items-flex-end">
+                </div>
+                <div class="card-content card-content-padding">
+                  <p class="date">` + cursor[i].value.name.fr +`</p>
+                  <p>` +cursor[i].value.longtext.fr +`</p>
+                </div>
               </div>
               `;
               var marker = new L.marker([cursor[i].value.latitude, cursor[i].value.longitude], {icon: HeritageIcon}).bindPopup(boomtestcontent);
               heritageLayerGroup.addLayer(marker);
             }
             
-            L.control.layers(null, overlay).addTo(mymap);
+          
             
             //console.log("Heritage info = " + JSON.stringify(cursor.value,null,2));
             //cursor.continue();
@@ -1333,17 +1335,6 @@ function Kaart()
               radius: 500
           }).bindPopup(heritageContent);
           var gateMarker = new L.marker([gatesInfo[i].latitude, gatesInfo[i].longitude], {icon: GateIcon}).bindPopup(heritageContent);
-          /*-----------------------code voor tooltip in het midden van de cirkel
-          var text = L.tooltip(
-            {
-              permanent: true,
-              direction: 'center',
-              className: 'text'
-            })
-          .setContent(gatesInfo[i].name.nl)
-          .setLatLng([gatesInfo[i].latitude, gatesInfo[i].longitude]);
-          gatesLayerGroup.addLayer(text);
-          */
           gatesLayerGroup.addLayer(marker);
         }
         var publicTransportLayerGroup = L.layerGroup();
@@ -1410,6 +1401,7 @@ function Kaart()
           'Horeca' : HorecaLayerGroup,
           'Parking vélo' : BikeParkingLayerGroup
         }; 
+        L.control.layers(null, overlay).addTo(mymapFR);
 
         //----------------------------------------------------------------------------------------
       }
@@ -1441,11 +1433,11 @@ function Kaart()
         }
         
         clearInterval(mapElementInterval);
+        localStorage.setItem("MapENGInitialised","true");
         console.log("element bestaat");
         //----------------------------------------------------------------------------------------------
         //var mapboxUrl = "https://api.mapbox.com/styles/v1/groenestapstenenvzw/cjsa2ljft5tgs1ftdjcqr09mo/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoiZ3JvZW5lc3RhcHN0ZW5lbnZ6dyIsImEiOiJjanMwNzNiN2MwMDhmNGFrdm9pZTlidzhzIn0.9eaZs-fbZSyygtfnyqUEIQ";
-        /*leaflet code*/
-        mymap = L.map('mapidENG',
+        mymapENG = L.map('mapidENG',
         {
           maxBounds: [
               //south west
@@ -1460,10 +1452,10 @@ function Kaart()
           minZoom: 11,
           tileSize: 512,
           zoomOffset: -1,
-        }).addTo(mymap);
+        }).addTo(mymapENG);
         //mymap.on('load', () => console.log(map.getCanvas().toDataURL()));
         
-        mymap.locate(
+        mymapENG.locate(
         {
           setView: false, 
           maxZoom: 16, 
@@ -1489,21 +1481,20 @@ function Kaart()
             {
               var boomtestcontent =`
               <div class="card demo-card-header-pic">
-              <a href="/Event/">
-              <div style="background-image:url(` + cursor[i].value.imagename +`)"
-                class="card-header align-items-flex-end"></div>
-              </a>
-              <div class="card-content card-content-padding">
-                <p class="date">` + cursor[i].value.name.en +`</p>
-                <p>` +cursor[i].value.longtext.en +`</p>
-              </div>
+                <div style="background-image:url(` + cursor[i].value.imagename +`)"
+                  class="card-header align-items-flex-end">
+                </div>
+                <div class="card-content card-content-padding">
+                  <p class="date">` + cursor[i].value.name.en +`</p>
+                  <p>` +cursor[i].value.longtext.en +`</p>
+                </div>
               </div>
               `;
               var marker = new L.marker([cursor[i].value.latitude, cursor[i].value.longitude], {icon: HeritageIcon}).bindPopup(boomtestcontent);
               heritageLayerGroup.addLayer(marker);
             }
             
-            L.control.layers(null, overlay).addTo(mymap);
+            
             
             //console.log("Heritage info = " + JSON.stringify(cursor.value,null,2));
             //cursor.continue();
@@ -1527,17 +1518,6 @@ function Kaart()
               radius: 500
           }).bindPopup(heritageContent);
           var gateMarker = new L.marker([gatesInfo[i].latitude, gatesInfo[i].longitude], {icon: GateIcon}).bindPopup(heritageContent);
-          /*-----------------------code voor tooltip in het midden van de cirkel
-          var text = L.tooltip(
-            {
-              permanent: true,
-              direction: 'center',
-              className: 'text'
-            })
-          .setContent(gatesInfo[i].name.nl)
-          .setLatLng([gatesInfo[i].latitude, gatesInfo[i].longitude]);
-          gatesLayerGroup.addLayer(text);
-          */
           gatesLayerGroup.addLayer(marker);
         }
         var publicTransportLayerGroup = L.layerGroup();
@@ -1593,7 +1573,7 @@ function Kaart()
           'Horeca' : HorecaLayerGroup,
           'Bike parking' : BikeParkingLayerGroup
         }; 
-
+        L.control.layers(null, overlay).addTo(mymapENG);
         //----------------------------------------------------------------------------------------
       }
       else
@@ -1610,7 +1590,7 @@ function MapInitialise()
 {
   localStorage.setItem("MapNLInitialised", "false");
   localStorage.setItem("MapFRInitialised", "false");
-  localStorage.setItem("MapENInitialised", "false");
+  localStorage.setItem("MapENGInitialised", "false");
 }
 //HeritageLayer();
 function HeritageLayer()
@@ -2343,6 +2323,14 @@ function GekozenRoute(name)
 {
   if(localStorage.getItem("GeselecteerdeTaal") == "NL")
   {
+    console.log("route geselecteerd");
+    var gekozenRouteName = name;
+    var localstorageRoutePoints = gekozenRouteName + "RoutePoints";
+    coords = JSON.parse(localStorage.getItem(localstorageRoutePoints));
+    console.log(localstorageRoutePoints);
+
+    StartMarker = L.marker([coords[0].lat,coords[0].lng], {icon: StartIcon});
+    mymapNL.addLayer(StartMarker);
     document.getElementById("mapidNL").style.height = "85%";
     document.getElementsByClassName("btnRouteNL")[0].style.display = "none";
     document.getElementsByClassName("KiesRouteDivNL")[0].style.display = 'none';
@@ -2355,9 +2343,114 @@ function GekozenRoute(name)
     {
       document.getElementsByClassName("BeforeRouteNL")[0].style.marginTop = "-22%";
     }
+
+    var x;
+    for (var i = 0; i < localStorage.length; i++)
+    {
+      //testLocalStorage[i] = localStorage.getItem(localStorage.key(i));
+      try
+      {
+        //kijken of het eerste teken van x een { of een [ is, indien nee, continue anders break
+        x = localStorage.getItem(localStorage.key(i));
+        x = JSON.parse(x);
+        //x = JSON.stringify(x,null,2);
+        if(gekozenRouteName == x.uniqueName.replace(/\s/g, ""))
+        {
+          document.getElementsByClassName("BeforeRouteNameNL")[0].innerHTML = x.name.nl;
+          localStorage.setItem("GekozenRouteName",x.name.nl);
+          GekozenRouteDistance = x.distance;
+          GekozenRouteType = x.type;
+          console.log("GekozenRouteType = " + GekozenRouteType);
+          console.log("GekozenRouteDistance = " + GekozenRouteDistance);
+          TotaleDuurRoute = BerekenTijd(GekozenRouteDistance, GekozenRouteType);
+
+          var duurPerPolylineInterval = setInterval(function()
+          {
+            if(polylineLines != undefined)
+            {
+              if(polylineLines != "")
+              {
+                DuurPerPolyline = TotaleDuurRoute /polylineLines.length;
+                clearInterval(duurPerPolylineInterval);
+              }
+            }
+          },200)
+        }
+      }
+      catch(err)
+      {
+        console.log("error: " + err);
+      }
+    }
+    if(localStorage.getItem("polyline") !=null)
+    {
+      for (var key in window) 
+      {
+        try
+        {
+          if(window["polyline" + (x)] != undefined)
+          {
+            if(window["polyline" + (x)].options.color == "yellow" || window["polyline" + (x)].options.color == "orange" || window["polyline" + (x)].options.color == "lightgreen")
+            {
+              mymapNL.removeLayer(window["polyline" + (x)]);
+            }
+          }
+          else
+          {
+            console.log("polyline is undefined");
+          }
+        }
+        catch(err)
+        {
+          console.log(err);
+        }
+        x++;
+      }
+    }
+    for(var i = 0; i < coords.length; i++)
+    {
+      if(i>0)
+      {
+        polylineLines.push([[coords[i-1].lat, coords[i-1].lng],[coords[i].lat, coords[i].lng]]);
+        if(i<3)
+        {
+          window['polyline' + i] = [[coords[i-1].lat, coords[i-1].lng],[coords[i].lat, coords[i].lng]];
+          window['polyline' + i] = L.polyline( window['polyline' + i]).addTo(mymapNL); 
+          window['polyline' + i].setStyle(
+          {
+            color: 'yellow'
+          }); 
+        }
+        else
+        {
+          window['polyline' + i] = [[coords[i-1].lat, coords[i-1].lng],[coords[i].lat, coords[i].lng]];
+          //console.log(window['polyline' + i]);
+          
+          //polylineLines.push(window['polyline' + i]);
+          window['polyline' + i] = L.polyline( window['polyline' + i]).addTo(mymapNL); 
+          window['polyline' + i].setStyle(
+          {
+            color: 'orange'
+          }); 
+        }
+        
+      }
+      //console.log(coords[i]);
+    }
+    document.getElementsByClassName("RouteTotaleAfstandNL")[0].innerHTML = GekozenRouteDistance;
+    document.getElementsByClassName("RouteAfgelegdeAfstandNL")[0].innerHTML = "0.00";
+    document.getElementsByClassName("RouteResterendeTijdNL")[0].innerHTML = TotaleDuurRoute;
   }
   else if(localStorage.getItem("GeselecteerdeTaal") == "FR")
   {
+    console.log("route geselecteerd");
+    var gekozenRouteName = name;
+    var localstorageRoutePoints = gekozenRouteName + "RoutePoints";
+    coords = JSON.parse(localStorage.getItem(localstorageRoutePoints));
+    console.log(localstorageRoutePoints);
+
+    StartMarker = L.marker([coords[0].lat,coords[0].lng], {icon: StartIcon});
+    mymapFR.addLayer(StartMarker);
     document.getElementById("mapidFR").style.height = "85%";
     document.getElementsByClassName("btnRouteFR")[0].style.display = "none";
     document.getElementsByClassName("KiesRouteDivFR")[0].style.display = 'none';
@@ -2370,9 +2463,112 @@ function GekozenRoute(name)
     {
       document.getElementsByClassName("BeforeRouteFR")[0].style.marginTop = "-22%";
     }
+    var x;
+    for (var i = 0; i < localStorage.length; i++)
+    {
+      //testLocalStorage[i] = localStorage.getItem(localStorage.key(i));
+      try
+      {
+        //kijken of het eerste teken van x een { of een [ is, indien nee, continue anders break
+        x = localStorage.getItem(localStorage.key(i));
+        x = JSON.parse(x);
+        //x = JSON.stringify(x,null,2);
+        if(gekozenRouteName == x.uniqueName.replace(/\s/g, ""))
+        {
+          document.getElementsByClassName("BeforeRouteNameFR")[0].innerHTML = x.name.fr;
+          localStorage.setItem("GekozenRouteName",x.name.fr);
+          GekozenRouteDistance = x.distance;
+          GekozenRouteType = x.type;
+          console.log("GekozenRouteType = " + GekozenRouteType);
+          console.log("GekozenRouteDistance = " + GekozenRouteDistance);
+          TotaleDuurRoute = BerekenTijd(GekozenRouteDistance, GekozenRouteType);
+
+          var duurPerPolylineInterval = setInterval(function()
+          {
+            if(polylineLines != undefined)
+            {
+              if(polylineLines != "")
+              {
+                DuurPerPolyline = TotaleDuurRoute /polylineLines.length;
+                clearInterval(duurPerPolylineInterval);
+              }
+            }
+          },200)
+        }
+      }
+      catch(err)
+      {
+        console.log("error: " + err);
+      }
+    }
+    if(localStorage.getItem("polyline") !=null)
+    {
+      for (var key in window) 
+      {
+        try
+        {
+          if(window["polyline" + (x)] != undefined)
+          {
+            if(window["polyline" + (x)].options.color == "yellow" || window["polyline" + (x)].options.color == "orange" || window["polyline" + (x)].options.color == "lightgreen")
+            {
+              mymapFR.removeLayer(window["polyline" + (x)]);
+            }
+          }
+          else
+          {
+            console.log("polyline is undefined");
+          }
+        }
+        catch(err)
+        {
+          console.log(err);
+        }
+        x++;
+      }
+    }
+    for(var i = 0; i < coords.length; i++)
+    {
+      if(i>0)
+      {
+        if(i<3)
+        {
+          window['polyline' + i] = [[coords[i-1].lat, coords[i-1].lng],[coords[i].lat, coords[i].lng]];
+          window['polyline' + i] = L.polyline( window['polyline' + i]).addTo(mymapFR); 
+          window['polyline' + i].setStyle(
+          {
+            color: 'yellow'
+          }); 
+        }
+        else
+        {
+          window['polyline' + i] = [[coords[i-1].lat, coords[i-1].lng],[coords[i].lat, coords[i].lng]];
+          //console.log(window['polyline' + i]);
+          polylineLines.push([[coords[i-1].lat, coords[i-1].lng],[coords[i].lat, coords[i].lng]]);
+          //polylineLines.push(window['polyline' + i]);
+          window['polyline' + i] = L.polyline( window['polyline' + i]).addTo(mymapFR); 
+          window['polyline' + i].setStyle(
+          {
+            color: 'orange'
+          }); 
+        }
+        
+      }
+      //console.log(coords[i]);
+    }
+    document.getElementsByClassName("RouteTotaleAfstandFR")[0].innerHTML = GekozenRouteDistance;
+    document.getElementsByClassName("RouteAfgelegdeAfstandFR")[0].innerHTML = "0.00";
+    document.getElementsByClassName("RouteResterendeTijdFR")[0].innerHTML = TotaleDuurRoute;
   }
   else if(localStorage.getItem("GeselecteerdeTaal") == "ENG")
   {
+    console.log("route geselecteerd");
+    var gekozenRouteName = name;
+    var localstorageRoutePoints = gekozenRouteName + "RoutePoints";
+    coords = JSON.parse(localStorage.getItem(localstorageRoutePoints));
+    console.log(localstorageRoutePoints);
+
+    StartMarker = L.marker([coords[0].lat,coords[0].lng], {icon: StartIcon});
+    mymapENG.addLayer(StartMarker);
     document.getElementById("mapidENG").style.height = "85%";
     document.getElementsByClassName("btnRouteENG")[0].style.display = "none";
     document.getElementsByClassName("KiesRouteDivENG")[0].style.display = 'none';
@@ -2385,163 +2581,107 @@ function GekozenRoute(name)
     {
       document.getElementsByClassName("BeforeRouteENG")[0].style.marginTop = "-22%";
     }
-  }
-  console.log("route geselecteerd");
-  var gekozenRouteName = name;
-  var localstorageRoutePoints = gekozenRouteName + "RoutePoints";
-  coords = JSON.parse(localStorage.getItem(localstorageRoutePoints));
-  console.log(localstorageRoutePoints);
-
-  StartMarker = L.marker([coords[0].lat,coords[0].lng], {icon: StartIcon});
-  mymap.addLayer(StartMarker);
-
-  //console.log(coords[0]);
-  //console.log(coords[1]);
-  var x;
-  for (var i = 0; i < localStorage.length; i++)
-  {
-    //testLocalStorage[i] = localStorage.getItem(localStorage.key(i));
-    try
+    var x;
+    for (var i = 0; i < localStorage.length; i++)
     {
-      //kijken of het eerste teken van x een { of een [ is, indien nee, continue anders break
-      x = localStorage.getItem(localStorage.key(i));
-
-
-
-
-      x = JSON.parse(x);
-      //x = JSON.stringify(x,null,2);
-      if(gekozenRouteName == x.uniqueName.replace(/\s/g, ""))
+      //testLocalStorage[i] = localStorage.getItem(localStorage.key(i));
+      try
       {
-        if(localStorage.getItem("GeselecteerdeTaal") == "NL")
+        //kijken of het eerste teken van x een { of een [ is, indien nee, continue anders break
+        x = localStorage.getItem(localStorage.key(i));
+        x = JSON.parse(x);
+        //x = JSON.stringify(x,null,2);
+        if(gekozenRouteName == x.uniqueName.replace(/\s/g, ""))
         {
-          document.getElementById("BeforeRouteNameNL").innerHTML = x.name.nl;
-          localStorage.setItem("GekozenRouteName",x.name.nl);
-        }
-        else if(localStorage.getItem("GeselecteerdeTaal") == "FR")
-        {
-          document.getElementById("BeforeRouteNameFR").innerHTML = x.name.fr;
-          localStorage.setItem("GekozenRouteName",x.name.fr);
-        }
-        else if(localStorage.getItem("GeselecteerdeTaal") == "ENG")
-        {
-          document.getElementById("BeforeRouteNameENG").innerHTML = x.name.en;
-          µlocalStorage.setItem("GekozenRouteName",x.name.en);
-        }
-        localStorage.setItem("GekozenRouteName",x.uniqueName);
-        GekozenRouteDistance = x.distance;
-        GekozenRouteType = x.type;
-        console.log("GekozenRouteType = " + GekozenRouteType);
-        console.log("GekozenRouteDistance = " + GekozenRouteDistance);
-        TotaleDuurRoute = BerekenTijd(GekozenRouteDistance, GekozenRouteType);
+          document.getElementsByClassName("BeforeRouteNameENG")[0].innerHTML = x.name.en;
+          localStorage.setItem("GekozenRouteName",x.name.en);
+          GekozenRouteDistance = x.distance;
+          GekozenRouteType = x.type;
+          console.log("GekozenRouteType = " + GekozenRouteType);
+          console.log("GekozenRouteDistance = " + GekozenRouteDistance);
+          TotaleDuurRoute = BerekenTijd(GekozenRouteDistance, GekozenRouteType);
 
-        var duurPerPolylineInterval = setInterval(function()
-        {
-          if(polylineLines != undefined)
+          var duurPerPolylineInterval = setInterval(function()
           {
-            if(polylineLines != "")
+            if(polylineLines != undefined)
             {
-              DuurPerPolyline = TotaleDuurRoute /polylineLines.length;
-              clearInterval(duurPerPolylineInterval);
+              if(polylineLines != "")
+              {
+                DuurPerPolyline = TotaleDuurRoute /polylineLines.length;
+                clearInterval(duurPerPolylineInterval);
+              }
             }
-          }
-        },200)
-        
+          },200)
+        }
+      }
+      catch(err)
+      {
+        console.log("error: " + err);
       }
     }
-    catch(err)
+    if(localStorage.getItem("polyline") !=null)
     {
-      console.log("error: " + err);
+      for (var key in window) 
+      {
+        try
+        {
+          if(window["polyline" + (x)] != undefined)
+          {
+            if(window["polyline" + (x)].options.color == "yellow" || window["polyline" + (x)].options.color == "orange" || window["polyline" + (x)].options.color == "lightgreen")
+            {
+              mymapENG.removeLayer(window["polyline" + (x)]);
+            }
+          }
+          else
+          {
+            console.log("polyline is undefined");
+          }
+        }
+        catch(err)
+        {
+          console.log(err);
+        }
+        x++;
+      }
     }
-    
+    for(var i = 0; i < coords.length; i++)
+    {
+      if(i>0)
+      {
+        if(i<3)
+        {
+          window['polyline' + i] = [[coords[i-1].lat, coords[i-1].lng],[coords[i].lat, coords[i].lng]];
+          window['polyline' + i] = L.polyline( window['polyline' + i]).addTo(mymapENG); 
+          window['polyline' + i].setStyle(
+          {
+            color: 'yellow'
+          }); 
+        }
+        else
+        {
+          window['polyline' + i] = [[coords[i-1].lat, coords[i-1].lng],[coords[i].lat, coords[i].lng]];
+          //console.log(window['polyline' + i]);
+          polylineLines.push([[coords[i-1].lat, coords[i-1].lng],[coords[i].lat, coords[i].lng]]);
+          //polylineLines.push(window['polyline' + i]);
+          window['polyline' + i] = L.polyline( window['polyline' + i]).addTo(mymapENG); 
+          window['polyline' + i].setStyle(
+          {
+            color: 'orange'
+          }); 
+        }
+        
+      }
+      //console.log(coords[i]);
+    }
+    document.getElementsByClassName("RouteTotaleAfstandENG")[0].innerHTML = GekozenRouteDistance;
+    document.getElementsByClassName("RouteAfgelegdeAfstandENG")[0].innerHTML = "0.00";
+    document.getElementsByClassName("RouteResterendeTijdENG")[0].innerHTML = TotaleDuurRoute;
   }
   /*
   var x = JSON.parse(localStorage.getItem(localStorage.key(4)));
   x = JSON.stringify(x,null,2);
   console.log("GekozenName = " + x);
 */  
-  if(localStorage.getItem("polyline") !=null)
-  {
-    /*
-    for(i in mymap._layers) 
-    {
-      if(mymap._layers[i]._path != undefined) 
-      {
-        try 
-        {
-          mymap.removeLayer(mymap._layers[i]);
-        }
-        catch(e) 
-        {
-            console.log("problem with " + e + mymap._layers[i]);
-        }
-      }
-    }
-    console.log("polyline removed");
-    */
-    for (var key in window) 
-    {
-      try
-      {
-        if(window["polyline" + (x)] != undefined)
-        {
-          if(window["polyline" + (x)].options.color == "yellow" || window["polyline" + (x)].options.color == "orange" || window["polyline" + (x)].options.color == "lightgreen")
-          {
-            mymap.removeLayer(window["polyline" + (x)]);
-          }
-        }
-        else
-        {
-          console.log("polyline is undefined");
-        }
-      }
-      catch(err)
-      {
-        console.log(err);
-      }
-      x++;
-    }
-  }
-  for(var i = 0; i < coords.length; i++)
-  {
-    if(i>0)
-    {
-      if(i<3)
-      {
-        window['polyline' + i] = [[coords[i-1].lat, coords[i-1].lng],[coords[i].lat, coords[i].lng]];
-        window['polyline' + i] = L.polyline( window['polyline' + i]).addTo(mymap); 
-        window['polyline' + i].setStyle(
-        {
-          color: 'yellow'
-        }); 
-      }
-      else
-      {
-        window['polyline' + i] = [[coords[i-1].lat, coords[i-1].lng],[coords[i].lat, coords[i].lng]];
-        //console.log(window['polyline' + i]);
-        polylineLines.push([[coords[i-1].lat, coords[i-1].lng],[coords[i].lat, coords[i].lng]]);
-        //polylineLines.push(window['polyline' + i]);
-        window['polyline' + i] = L.polyline( window['polyline' + i]).addTo(mymap); 
-        window['polyline' + i].setStyle(
-        {
-          color: 'orange'
-        }); 
-      }
-      
-    }
-    
-    //console.log(coords[i]);
-    
-  }
-  try
-  {
-    /*mymap.removeLayer(window["polyline" + (0)]);
-    mymap.removeLayer(window["polyline" + (1)]);*/
-  }
-  catch(err)
-  {
-    console.log(err);
-  }
   
   /*window['polyline' + (0)] = [[polylineLines[0][0][0], polylineLines[0][0][1]],[polylineLines[0][1][0], polylineLines[0][1][1]]];
   window['polyline' + (0)] = L.polyline( window['polyline' + (0)],{color: 'yellow'}).addTo(mymap);
@@ -2549,9 +2689,7 @@ function GekozenRoute(name)
   window['polyline' + (1)] = L.polyline( window['polyline' + (1)],{color: 'yellow'}).addTo(mymap);*/
   localStorage.setItem("polyline",JSON.stringify(coords));
   polylineCoords = coords;
-  document.getElementById("RouteTotaleAfstand").innerHTML = GekozenRouteDistance;
-  document.getElementById("RouteAfgelegdeAfstand").innerHTML = "0.00";
-  document.getElementById("RouteResterendeTijd").innerHTML = TotaleDuurRoute;
+
   //console.log(polylineCoords);
   //Kaart(coords);
 }
@@ -3055,7 +3193,7 @@ function locateUser()
       });
     } 
 }
-var coordinateLocationInArray = -1;
+var coordinateLocationInArray = 0;
 var polylineInterval = setInterval(function()
 {
   //locateUser();
@@ -3082,135 +3220,74 @@ var polylineInterval = setInterval(function()
 
 function onLocationFound(e) 
 {
+  var latlng;
   ///////////!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!AFGELEGDE AFSTAND UPDATE DE GELE LIJN IPV DE GROENE LIJN!!!!!!!!!!!!!!!
   // if position defined, then remove the existing position marker and accuracy circle from the map
   //console.log("location found");
-  if(localStorage.getItem("MapNLInitialised") == "true")
+  if(localStorage.getItem("GeselecteerdeTaal") == "NL")
   {
-    if (current_position) 
+    console.log("locatie gevonden");
+    if(localStorage.getItem("MapNLInitialised") == "true")
     {
-      mymap.removeLayer(current_position);
-    }
-    const latlng = 
-    {
-      lat: e.coords.latitude,
-      lng: e.coords.longitude
-    };
-    lat = e.coords.latitude;
-    long = e.coords.longitude;
-    current_position = L.marker(latlng).addTo(mymap);
-  }
-  if(localStorage.getItem("RouteStart") == "true")
-  {
-    //---------------------------------------------------------------------------------------
-    if(polylineLines != undefined)
-    {
-      if(polylineLines != "")
+      if (current_position) 
       {
-        
-        console.log(window["polyline" + (coordinateLocationInArray)]);
-        /*mymap.removeLayer(window["polyline" + (coordinateLocationInArray+1)]);
-        mymap.removeLayer(window["polyline" + (coordinateLocationInArray+2)]);*/
-        console.log("coordinateLocationInArray = " + coordinateLocationInArray);
-        var punt1;
-        var punt2;
-        //console.log(coordinatesToCalculate[i].lat);
-        punt1 = [polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]];
-        punt2 = [polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]];
-        
-        var punt1lat = JSON.parse(punt1[0]);
-        var punt1lng = JSON.parse(punt1[1]);
-        var punt2lat = JSON.parse(punt2[0]);
-        var punt2lng = JSON.parse(punt2[1]);
-        var rad = function(x) {
-          return x * Math.PI / 180;
-        };
-        var R = 6371000; // Earth’s mean radius in meter
-        var dLat = rad(punt2lat - punt1lat);
-        var dLong = rad(punt2lng - punt1lng);
-        var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-          Math.cos(rad(punt1lat)) * Math.cos(rad(punt2lat)) *
-          Math.sin(dLong / 2) * Math.sin(dLong / 2);
-        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        var d = R * c;
-        totaldistance = totaldistance + d;
-        //-----------------------------------------------------------------------
+        mymapNL.removeLayer(current_position);
+      }
+      latlng = 
+      {
+        lat: e.coords.latitude,
+        lng: e.coords.longitude
+      };
+      lat = e.coords.latitude;
+      long = e.coords.longitude;
+      current_position = L.marker(latlng).addTo(mymapNL);
+    }
+    if(localStorage.getItem("RouteStart") == "true")
+    {
+      //---------------------------------------------------------------------------------------
+      if(polylineLines != undefined)
+      {
+        if(polylineLines != "")
+        {
+          //console.log(window["polyline" + (coordinateLocationInArray)]);
+          punt1Lat = e.coords.latitude;
+          punt1Lng = e.coords.longitude
+          punt2Lat = polylineCoords[coordinateLocationInArray].lat;
+          punt2Lng = polylineCoords[coordinateLocationInArray].lng;
+
+          var afstadTussenPunten = BerekenAfstandTussenPunt(punt1Lat, punt1Lng, punt2Lat, punt2Lng);
           
-        //console.log("coordinateLocationInArray: " +coordinateLocationInArray );
-        //  mymap.removeLayer(window["polyline" + (coordinateLocationInArray+1)]);
-        if(coordinateLocationInArray+1 !=  polylineLines.length)
-        {
-          mymap.removeLayer(window["polyline" + (coordinateLocationInArray+1)]);
-          window['polyline' + (coordinateLocationInArray+1)] = [[polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]],[polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]]];
-          window['polyline' + (coordinateLocationInArray+1)] = L.polyline( window['polyline' + (coordinateLocationInArray+1)],{color: 'lightgreen'}).addTo(mymap); 
-        }
-        else
-        {
-          totaldistance = 0;
-          console.log("route finished");
-        }
-        if((coordinateLocationInArray + 2) !=  polylineLines.length)
-        {
-          mymap.removeLayer(window["polyline" + (coordinateLocationInArray+2)]);
-          window['polyline' + (coordinateLocationInArray+2)] = [[polylineLines[coordinateLocationInArray+1][0][0], polylineLines[coordinateLocationInArray+1][0][1]],[polylineLines[coordinateLocationInArray+1][1][0], polylineLines[coordinateLocationInArray+1][1][1]]];
-          window['polyline' + (coordinateLocationInArray+2)] = L.polyline( window['polyline' + (coordinateLocationInArray+2)],{color: 'yellow'}).addTo(mymap);
-        }
-        else
-        {
-          console.log("yellow finished");
-        }
-        coordinateLocationInArray++;
-        time = time + DuurPerPolyline;
-        if(time >= 1)
-        {
-          time = time -1;
-          TotaleDuurRoute = TotaleDuurRoute -1;
-
-        }
-        document.getElementById("RouteAfgelegdeAfstand").innerHTML = (totaldistance/1000).toFixed(2)  + "km";
-        document.getElementById("RouteTotaleAfstand").innerHTML = GekozenRouteDistance;
-        document.getElementById("RouteResterendeTijd").innerHTML = TotaleDuurRoute;
-        /*
-        console.log("Coord1 lat = " + polylineLines[coordinateLocationInArray][0][0]);
-        console.log("Coord1 long = " + polylineLines[coordinateLocationInArray][0][1]);
-
-        console.log("Coord2 lat = " + polylineLines[coordinateLocationInArray][1][0]);
-        console.log("Coord2 long = " + polylineLines[coordinateLocationInArray][1][1]);
-        */
-        //var line = [[polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]], [polylineLines[coordinateLocationInArray][1][0],polylineLines[coordinateLocationInArray][1][1]]];
-        
-      
-        //console.log("distance in meter: " + totaldistance); // returns the distance in meter
-        
-        //console.log("totale distance: " + puntdistance);
-        /*
-        var PolylineTime = BerekenTijd(d,GekozenRouteType);
-        PolylineTime = PolylineTime/60;
-        */
-        
-        
-        //console.log("time = " + time);
-        //console.log(window["polyline" + (coordinateLocationInArray+1)]);
-
-        /*
-        if(polylineLines[coordinateLocationInArray][1][0] == lat && polylineLines[coordinateLocationInArray][1][1] == long)
-        {
-          console.log("lng: " + polylineLines[coordinateLocationInArray][1][1] + "lat" + polylineLines[coordinateLocationInArray][1][0]);
-          console.log(coordinateLocationInArray);
-          
-
-        }
-        */
-
-        if(polylineCoords[coordinateLocationInArray].lng == long && polylineCoords[coordinateLocationInArray].lat == lat)
-        {
-          console.log("lng: " + polylineCoords[coordinateLocationInArray].lng + "lat" + polylineCoords[coordinateLocationInArray].lat);
-          console.log(coordinateLocationInArray);
-          //-----------------------------------------------------------------------------------------------
-          if(localStorage.getItem("Reverse") == "true")
+          if(afstadTussenPunten <20)
           {
-            
-            //console.log("in reverse");
+            console.log("je bent binnen 20 meter van het punt");
+            if(coordinateLocationInArray == polylineLines.length)
+            {
+              totaldistance = 0;
+              console.log("route finished");
+              localStorage.removeItem("polyline");
+              polylineLines = [];
+              polylineCoords = [];
+              coordinateLocationInArray = 0;
+              document.getElementById("mapidNL").style.height = "90%";
+              document.getElementsByClassName("btnRouteNL")[0].style.display = "block";
+              document.getElementsByClassName("BeforeRouteNL")[0].style.display = 'none';
+              document.getElementsByClassName("KiesRouteDivNL")[0].style.display = 'block';
+              document.getElementsByClassName("RouteInfoNL")[0].style.display = "none";
+              for(var key in window)
+              {
+                if(key.includes("polyline"))
+                {
+                  if(hasNumber.test(key) == true)
+                  {
+                    if(window[key].options.color == "yellow" || window[key].options.color == "orange" || window[key].options.color == "lightgreen")
+                    {
+                      mymapNL.removeLayer(window[key]);
+                    }
+                  }
+                }
+              }
+            }
+            //-----------------------------------------------------------------------------------------------
             // ------------------------DISTANCE BEREKENEN----------------------------
             var punt1;
             var punt2;
@@ -3234,17 +3311,105 @@ function onLocationFound(e)
             var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
             var d = R * c;
             totaldistance = totaldistance + d;
+            console.log("d = " + totaldistance);
             //-----------------------------------------------------------------------
             
             //console.log("coordinateLocationInArray: " +coordinateLocationInArray );
             //  mymap.removeLayer(window["polyline" + (coordinateLocationInArray+1)]);
-            if(coordinateLocationInArray+1 !=  polylineLines.length)
+            if((coordinateLocationInArray + 1) !=  polylineLines.length || (coordinateLocationInArray + 1) >  polylineLines.length)
             {
-              mymap.removeLayer(window["polyline" + (coordinateLocationInArray+1)]);
-              window['polyline' + (coordinateLocationInArray+1)] = [[polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]],[polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]]];
-              window['polyline' + (coordinateLocationInArray+1)] = L.polyline( window['polyline' + (coordinateLocationInArray+1)],{color: 'lightgreen'}).addTo(mymap); 
+              mymapNL.removeLayer(window["polyline" + (coordinateLocationInArray+1)]);
+              window['polyline' + (coordinateLocationInArray+1)] = [[polylineLines[coordinateLocationInArray+1][0][0], polylineLines[coordinateLocationInArray+1][0][1]],[polylineLines[coordinateLocationInArray+1][1][0], polylineLines[coordinateLocationInArray+1][1][1]]];
+              window['polyline' + (coordinateLocationInArray+1)] = L.polyline( window['polyline' + (coordinateLocationInArray+1)],{color: 'yellow'}).addTo(mymapNL);
             }
-            else
+            if(coordinateLocationInArray+1 !=  (polylineLines.length + 1))
+            {
+              if(coordinateLocationInArray>0)
+              {
+                if(coordinateLocationInArray == 1)
+                {
+                  //mymapNL.removeLayer(window["polyline" + (coordinateLocationInArray-1)]);
+                  window['polyline' + (coordinateLocationInArray-1)] = [[polylineLines[coordinateLocationInArray-1][0][0], polylineLines[coordinateLocationInArray-1][0][1]],[polylineLines[coordinateLocationInArray-1][1][0], polylineLines[coordinateLocationInArray-1][1][1]]];
+                  window['polyline' + (coordinateLocationInArray-1)] = L.polyline( window['polyline' + (coordinateLocationInArray-1)],{color: 'lightgreen'}).addTo(mymapNL); 
+                }
+                mymapNL.removeLayer(window["polyline" + (coordinateLocationInArray)]);
+                window['polyline' + (coordinateLocationInArray)] = [[polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]],[polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]]];
+                window['polyline' + (coordinateLocationInArray)] = L.polyline( window['polyline' + (coordinateLocationInArray)],{color: 'lightgreen'}).addTo(mymapNL); 
+                
+                time = time + DuurPerPolyline;
+                if(time >= 1)
+                {
+                  time = time -1;
+                  TotaleDuurRoute = TotaleDuurRoute -1;
+                }
+                document.getElementsByClassName("RouteAfgelegdeAfstandNL")[0].innerHTML = (totaldistance/1000).toFixed(2)  + "km";
+                document.getElementsByClassName("RouteTotaleAfstandNL")[0].innerHTML = GekozenRouteDistance;
+                document.getElementsByClassName("RouteResterendeTijdNL")[0].innerHTML = TotaleDuurRoute;
+              }
+            }
+            coordinateLocationInArray++;
+          
+            //-----------------------------------------------------------------------------------------------
+
+          }
+          else
+          {
+            console.log("je bent te ver van het punt");
+          }
+          console.log("afstadTussenPunten = " + afstadTussenPunten);
+        }
+        //kijken of de gebruiker op de bepaalde coordinaten is om de polyline achter hem groen te maken
+        
+      }
+      else
+      {
+        console.log("geen coordinates");
+      }
+      //--------------------------------------------------------------------------------------------------
+      
+    }
+    else
+    {
+      console.log("route niet gestart");
+    }
+  }
+  else if(localStorage.getItem("GeselecteerdeTaal") == "FR")
+  {
+    console.log("locatie gevonden");
+    if(localStorage.getItem("MapNLInitialised") == "true")
+    {
+      if (current_position) 
+      {
+        mymapFR.removeLayer(current_position);
+      }
+      latlng = 
+      {
+        lat: e.coords.latitude,
+        lng: e.coords.longitude
+      };
+      lat = e.coords.latitude;
+      long = e.coords.longitude;
+      current_position = L.marker(latlng).addTo(mymapFR);
+    }
+    if(localStorage.getItem("RouteStart") == "true")
+    {
+      //---------------------------------------------------------------------------------------
+      if(polylineLines != undefined)
+      {
+        if(polylineLines != "")
+        {
+          //console.log(window["polyline" + (coordinateLocationInArray)]);
+          punt1Lat = e.coords.latitude;
+          punt1Lng = e.coords.longitude
+          punt2Lat = polylineCoords[coordinateLocationInArray].lat;
+          punt2Lng = polylineCoords[coordinateLocationInArray].lng;
+
+          var afstadTussenPunten = BerekenAfstandTussenPunt(punt1Lat, punt1Lng, punt2Lat, punt2Lng);
+          
+          if(afstadTussenPunten <20)
+          {
+            console.log("je bent binnen 20 meter van het punt");
+            if(coordinateLocationInArray == polylineLines.length)
             {
               totaldistance = 0;
               console.log("route finished");
@@ -3252,55 +3417,30 @@ function onLocationFound(e)
               polylineLines = [];
               polylineCoords = [];
               coordinateLocationInArray = 0;
-              document.getElementById("mapid").style.height = "90%";
-              document.getElementById("btnRoute").style.display = 'block';
-              document.getElementById("BeforeRoute").style.display = 'none';
-              document.getElementById("RouteInfo").style.display = "none";
-              for(i in mymap._layers) 
+              document.getElementById("mapidFR").style.height = "90%";
+              document.getElementsByClassName("btnRouteFR")[0].style.display = "block";
+              document.getElementsByClassName("BeforeRouteFR")[0].style.display = 'none';
+              document.getElementsByClassName("KiesRouteDivFR")[0].style.display = 'block';
+              document.getElementsByClassName("RouteInfoFR")[0].style.display = "none";
+              for(var key in window)
               {
-                if(mymap._layers[i]._path != undefined) 
+                if(key.includes("polyline"))
                 {
-                  try 
+                  if(hasNumber.test(key) == true)
                   {
-                    mymap.removeLayer(mymap._layers[i]);
-                  }
-                  catch(e) 
-                  {
-                      console.log("problem with " + e + mymap._layers[i]);
+                    if(window[key].options.color == "yellow" || window[key].options.color == "orange" || window[key].options.color == "lightgreen")
+                    {
+                      mymapFR.removeLayer(window[key]);
+                    }
                   }
                 }
               }
             }
-            if((coordinateLocationInArray + 2) !=  polylineLines.length)
-            {
-              mymap.removeLayer(window["polyline" + (coordinateLocationInArray+2)]);
-              window['polyline' + (coordinateLocationInArray+2)] = [[polylineLines[coordinateLocationInArray+1][0][0], polylineLines[coordinateLocationInArray+1][0][1]],[polylineLines[coordinateLocationInArray+1][1][0], polylineLines[coordinateLocationInArray+1][1][1]]];
-              window['polyline' + (coordinateLocationInArray+2)] = L.polyline( window['polyline' + (coordinateLocationInArray+2)],{color: 'yellow'}).addTo(mymap);
-            }
-            else
-            {
-              console.log("yellow finished");
-            }
-            coordinateLocationInArray++;
-            time = time + DuurPerPolyline;
-            if(time >= 1)
-            {
-              time = time -1;
-              TotaleDuurRoute = TotaleDuurRoute -1;
-
-            }
-            document.getElementById("RouteAfgelegdeAfstand").innerHTML = (totaldistance/1000).toFixed(2)  + "km";
-            document.getElementById("RouteTotaleAfstand").innerHTML = GekozenRouteDistance;
-            document.getElementById("RouteResterendeTijd").innerHTML = TotaleDuurRoute;
-
-          }
-          else if(localStorage.getItem("Reverse") == "false")
-          {
+            //-----------------------------------------------------------------------------------------------
             // ------------------------DISTANCE BEREKENEN----------------------------
             var punt1;
             var punt2;
             //console.log(coordinatesToCalculate[i].lat);
-
             punt1 = [polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]];
             punt2 = [polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]];
             
@@ -3320,15 +3460,107 @@ function onLocationFound(e)
             var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
             var d = R * c;
             totaldistance = totaldistance + d;
+            console.log("d = " + totaldistance);
             //-----------------------------------------------------------------------
             
-            if(coordinateLocationInArray+1 !=  polylineLines.length)
+            //console.log("coordinateLocationInArray: " +coordinateLocationInArray );
+            //  mymap.removeLayer(window["polyline" + (coordinateLocationInArray+1)]);
+            if((coordinateLocationInArray + 1) !=  polylineLines.length || (coordinateLocationInArray + 1) >  polylineLines.length)
             {
-              mymap.removeLayer(window["polyline" + (coordinateLocationInArray+1)]);
-              window['polyline' + (coordinateLocationInArray+1)] = [[polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]],[polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]]];
-              window['polyline' + (coordinateLocationInArray+1)] = L.polyline( window['polyline' + (coordinateLocationInArray+1)],{color: 'lightgreen'}).addTo(mymap); 
+              mymapFR.removeLayer(window["polyline" + (coordinateLocationInArray+1)]);
+              window['polyline' + (coordinateLocationInArray+1)] = [[polylineLines[coordinateLocationInArray+1][0][0], polylineLines[coordinateLocationInArray+1][0][1]],[polylineLines[coordinateLocationInArray+1][1][0], polylineLines[coordinateLocationInArray+1][1][1]]];
+              window['polyline' + (coordinateLocationInArray+1)] = L.polyline( window['polyline' + (coordinateLocationInArray+1)],{color: 'yellow'}).addTo(mymapFR);
             }
-            else
+            if(coordinateLocationInArray+1 !=  (polylineLines.length + 1))
+            {
+              if(coordinateLocationInArray>0)
+              {
+                if(coordinateLocationInArray == 1)
+                {
+                  //mymapNL.removeLayer(window["polyline" + (coordinateLocationInArray-1)]);
+                  window['polyline' + (coordinateLocationInArray-1)] = [[polylineLines[coordinateLocationInArray-1][0][0], polylineLines[coordinateLocationInArray-1][0][1]],[polylineLines[coordinateLocationInArray-1][1][0], polylineLines[coordinateLocationInArray-1][1][1]]];
+                  window['polyline' + (coordinateLocationInArray-1)] = L.polyline( window['polyline' + (coordinateLocationInArray-1)],{color: 'lightgreen'}).addTo(mymapFR); 
+                }
+                mymapFR.removeLayer(window["polyline" + (coordinateLocationInArray)]);
+                window['polyline' + (coordinateLocationInArray)] = [[polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]],[polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]]];
+                window['polyline' + (coordinateLocationInArray)] = L.polyline( window['polyline' + (coordinateLocationInArray)],{color: 'lightgreen'}).addTo(mymapFR); 
+                
+                time = time + DuurPerPolyline;
+                if(time >= 1)
+                {
+                  time = time -1;
+                  TotaleDuurRoute = TotaleDuurRoute -1;
+                }
+                document.getElementsByClassName("RouteAfgelegdeAfstandFR")[0].innerHTML = (totaldistance/1000).toFixed(2)  + "km";
+                document.getElementsByClassName("RouteTotaleAfstandFR")[0].innerHTML = GekozenRouteDistance;
+                document.getElementsByClassName("RouteResterendeTijdFR")[0].innerHTML = TotaleDuurRoute;
+              }
+            }
+            coordinateLocationInArray++;
+          
+            //-----------------------------------------------------------------------------------------------
+
+          }
+          else
+          {
+            console.log("je bent te ver van het punt");
+          }
+          console.log("afstadTussenPunten = " + afstadTussenPunten);
+        }
+        //kijken of de gebruiker op de bepaalde coordinaten is om de polyline achter hem groen te maken
+        
+      }
+      else
+      {
+        console.log("geen coordinates");
+      }
+      //--------------------------------------------------------------------------------------------------
+      
+    }
+    else
+    {
+      console.log("route niet gestart");
+    }
+  }
+  else if(localStorage.getItem("GeselecteerdeTaal") == "ENG")
+  {
+    console.log("locatie gevonden");
+    if(localStorage.getItem("MapNLInitialised") == "true")
+    {
+      if (current_position) 
+      {
+        mymapENG.removeLayer(current_position);
+      }
+      latlng = 
+      {
+        lat: e.coords.latitude,
+        lng: e.coords.longitude
+      };
+      lat = e.coords.latitude;
+      long = e.coords.longitude;
+      current_position = L.marker(latlng).addTo(mymapENG);
+    }
+    if(localStorage.getItem("RouteStart") == "true")
+    {
+      //---------------------------------------------------------------------------------------
+      if(polylineLines != undefined)
+      {
+        if(polylineLines != "")
+        {
+          //console.log(window["polyline" + (coordinateLocationInArray)]);
+          punt1Lat = e.coords.latitude;
+          punt1Lng = e.coords.longitude
+          punt2Lat = polylineCoords[coordinateLocationInArray].lat;
+          punt2Lng = polylineCoords[coordinateLocationInArray].lng;
+
+          var afstadTussenPunten = BerekenAfstandTussenPunt(punt1Lat, punt1Lng, punt2Lat, punt2Lng);
+          
+          if(afstadTussenPunten <20)
+          {
+            console.log("je bent binnen 20 meter van het punt");
+            console.log("lng: " + polylineCoords[coordinateLocationInArray].lng + "lat" + polylineCoords[coordinateLocationInArray].lat);
+            console.log(coordinateLocationInArray);
+            if(coordinateLocationInArray == polylineLines.length)
             {
               totaldistance = 0;
               console.log("route finished");
@@ -3336,74 +3568,110 @@ function onLocationFound(e)
               polylineLines = [];
               polylineCoords = [];
               coordinateLocationInArray = 0;
-              console.log("stop route");
-              document.getElementById("mapid").style.height = "90%";
-              document.getElementById("btnRoute").style.display = 'block';
-              document.getElementById("BeforeRoute").style.display = 'none';
-              document.getElementById("RouteInfo").style.display = "none";
-              for(i in mymap._layers) 
+              document.getElementById("mapidENG").style.height = "90%";
+              document.getElementsByClassName("btnRouteENG")[0].style.display = "block";
+              document.getElementsByClassName("BeforeRouteENG")[0].style.display = 'none';
+              document.getElementsByClassName("KiesRouteDivENG")[0].style.display = 'block';
+              document.getElementsByClassName("RouteInfoENG")[0].style.display = "none";
+              for(var key in window)
               {
-                if(mymap._layers[i]._path != undefined) 
+                if(key.includes("polyline"))
                 {
-                  try 
+                  if(hasNumber.test(key) == true)
                   {
-                    mymap.removeLayer(mymap._layers[i]);
-                  }
-                  catch(e) 
-                  {
-                      console.log("problem with " + e + mymap._layers[i]);
+                    if(window[key].options.color == "yellow" || window[key].options.color == "orange" || window[key].options.color == "lightgreen")
+                    {
+                      mymapENG.removeLayer(window[key]);
+                    }
                   }
                 }
               }
             }
-            if((coordinateLocationInArray + 2) !=  polylineLines.length)
-            {
-              mymap.removeLayer(window["polyline" + (coordinateLocationInArray+2)]);
-              window['polyline' + (coordinateLocationInArray+2)] = [[polylineLines[coordinateLocationInArray+1][0][0], polylineLines[coordinateLocationInArray+1][0][1]],[polylineLines[coordinateLocationInArray+1][1][0], polylineLines[coordinateLocationInArray+1][1][1]]];
-              window['polyline' + (coordinateLocationInArray+2)] = L.polyline( window['polyline' + (coordinateLocationInArray+2)],{color: 'yellow'}).addTo(mymap);
-            }
-            else
-            {
-              console.log("yellow finished");
-            }
-          
-            coordinateLocationInArray ++;
-            time = time + DuurPerPolyline;
-            if(time >= 1)
-            {
-              time = time -1;
-              TotaleDuurRoute = TotaleDuurRoute -1;
-
-            }
-            document.getElementById("RouteAfgelegdeAfstand").innerHTML = (totaldistance/1000).toFixed(2)  + "km";
-            document.getElementById("RouteTotaleAfstand").innerHTML = GekozenRouteDistance;
-            document.getElementById("RouteResterendeTijd").innerHTML = TotaleDuurRoute;
+            //-----------------------------------------------------------------------------------------------
+            // ------------------------DISTANCE BEREKENEN----------------------------
+            var punt1;
+            var punt2;
+            //console.log(coordinatesToCalculate[i].lat);
+            punt1 = [polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]];
+            punt2 = [polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]];
             
-          }
-          //-----------------------------------------------------------------------------------------------
+            var punt1lat = JSON.parse(punt1[0]);
+            var punt1lng = JSON.parse(punt1[1]);
+            var punt2lat = JSON.parse(punt2[0]);
+            var punt2lng = JSON.parse(punt2[1]);
+            var rad = function(x) {
+              return x * Math.PI / 180;
+            };
+            var R = 6371000; // Earth’s mean radius in meter
+            var dLat = rad(punt2lat - punt1lat);
+            var dLong = rad(punt2lng - punt1lng);
+            var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(rad(punt1lat)) * Math.cos(rad(punt2lat)) *
+              Math.sin(dLong / 2) * Math.sin(dLong / 2);
+            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            var d = R * c;
+            totaldistance = totaldistance + d;
+            console.log("d = " + totaldistance);
+            //-----------------------------------------------------------------------
+            
+            //console.log("coordinateLocationInArray: " +coordinateLocationInArray );
+            //  mymap.removeLayer(window["polyline" + (coordinateLocationInArray+1)]);
+            if((coordinateLocationInArray + 1) !=  polylineLines.length || (coordinateLocationInArray + 1) >  polylineLines.length)
+            {
+              mymapENG.removeLayer(window["polyline" + (coordinateLocationInArray+1)]);
+              window['polyline' + (coordinateLocationInArray+1)] = [[polylineLines[coordinateLocationInArray+1][0][0], polylineLines[coordinateLocationInArray+1][0][1]],[polylineLines[coordinateLocationInArray+1][1][0], polylineLines[coordinateLocationInArray+1][1][1]]];
+              window['polyline' + (coordinateLocationInArray+1)] = L.polyline( window['polyline' + (coordinateLocationInArray+1)],{color: 'yellow'}).addTo(mymapENG);
+            }
+            if(coordinateLocationInArray+1 !=  (polylineLines.length + 1))
+            {
+              if(coordinateLocationInArray>0)
+              {
+                if(coordinateLocationInArray == 1)
+                {
+                  //mymapNL.removeLayer(window["polyline" + (coordinateLocationInArray-1)]);
+                  window['polyline' + (coordinateLocationInArray-1)] = [[polylineLines[coordinateLocationInArray-1][0][0], polylineLines[coordinateLocationInArray-1][0][1]],[polylineLines[coordinateLocationInArray-1][1][0], polylineLines[coordinateLocationInArray-1][1][1]]];
+                  window['polyline' + (coordinateLocationInArray-1)] = L.polyline( window['polyline' + (coordinateLocationInArray-1)],{color: 'lightgreen'}).addTo(mymapENG); 
+                }
+                mymapENG.removeLayer(window["polyline" + (coordinateLocationInArray)]);
+                window['polyline' + (coordinateLocationInArray)] = [[polylineLines[coordinateLocationInArray][0][0], polylineLines[coordinateLocationInArray][0][1]],[polylineLines[coordinateLocationInArray][1][0], polylineLines[coordinateLocationInArray][1][1]]];
+                window['polyline' + (coordinateLocationInArray)] = L.polyline( window['polyline' + (coordinateLocationInArray)],{color: 'lightgreen'}).addTo(mymapENG); 
+                
+                time = time + DuurPerPolyline;
+                if(time >= 1)
+                {
+                  time = time -1;
+                  TotaleDuurRoute = TotaleDuurRoute -1;
+                }
+                document.getElementsByClassName("RouteAfgelegdeAfstandENG")[0].innerHTML = (totaldistance/1000).toFixed(2)  + "km";
+                document.getElementsByClassName("RouteTotaleAfstandENG")[0].innerHTML = GekozenRouteDistance;
+                document.getElementsByClassName("RouteResterendeTijdENG")[0].innerHTML = TotaleDuurRoute;
+              }
+            }
+            coordinateLocationInArray++;
+          
+            //-----------------------------------------------------------------------------------------------
 
+          }
+          else
+          {
+            console.log("je bent te ver van het punt");
+          }
+          console.log("afstadTussenPunten = " + afstadTussenPunten);
         }
-        else
-        {
-          console.log(polylineCoords[coordinateLocationInArray]);
-          console.log("volgende coordinaten niet bereikt dus blijft bij: " + coordinateLocationInArray);
-          //console.log("lng: " + polylineCoords[coordinateLocationInArray].lng + "lat" + polylineCoords[coordinateLocationInArray].lat);
-          //coordinateLocationInArray ++;
-        }
+        //kijken of de gebruiker op de bepaalde coordinaten is om de polyline achter hem groen te maken
+        
       }
-      //kijken of de gebruiker op de bepaalde coordinaten is om de polyline achter hem groen te maken
+      else
+      {
+        console.log("geen coordinates");
+      }
+      //--------------------------------------------------------------------------------------------------
       
     }
     else
     {
-      console.log("geen coordinates");
+      console.log("route niet gestart");
     }
-    //--------------------------------------------------------------------------------------------------
-    
-  }
-  else
-  {
-    console.log("route niet gestart");
   }
   
 }
@@ -3450,88 +3718,263 @@ function RouteDistanceBerekenen(coordinates)
 function ReverseRoute()
 {
   var endOfRoute = coords.length;
-  if(localStorage.getItem("Reverse") == "true")
+  if(localStorage.getItem("GeselecteerdeTaal") == "NL")
   {
-    mymap.removeLayer(window["polyline" + (1)]);
-    mymap.removeLayer(window["polyline" + (2)]);
-    mymap.removeLayer(window["polyline" + (endOfRoute-1)]);
-    mymap.removeLayer(window["polyline" + (endOfRoute-2)]);
-    window['polyline' + (endOfRoute-1)] = [[coords[endOfRoute-2].lat, coords[endOfRoute-2].lng],[coords[endOfRoute-1].lat, coords[endOfRoute-1].lng]];
-    window['polyline' + (endOfRoute-1)] = L.polyline( window['polyline' +(endOfRoute-1)]).addTo(mymap); 
-    window['polyline' + (endOfRoute-1)].setStyle(
+    if(localStorage.getItem("Reverse") == "true")
     {
-      color: 'yellow'
-    }); 
-    window['polyline' + (endOfRoute-2)] = [[coords[endOfRoute-3].lat, coords[endOfRoute-3].lng],[coords[endOfRoute-2].lat, coords[endOfRoute-2].lng]];
-    window['polyline' + (endOfRoute-2)] = L.polyline( window['polyline' + (endOfRoute-2)]).addTo(mymap); 
-    window['polyline' + (endOfRoute-2)].setStyle(
+      mymapNL.removeLayer(window["polyline" + (1)]);
+      mymapNL.removeLayer(window["polyline" + (2)]);
+      mymapNL.removeLayer(window["polyline" + (endOfRoute-1)]);
+      mymapNL.removeLayer(window["polyline" + (endOfRoute-2)]);
+      window['polyline' + (endOfRoute-1)] = [[coords[endOfRoute-2].lat, coords[endOfRoute-2].lng],[coords[endOfRoute-1].lat, coords[endOfRoute-1].lng]];
+      window['polyline' + (endOfRoute-1)] = L.polyline( window['polyline' +(endOfRoute-1)]).addTo(mymapNL); 
+      window['polyline' + (endOfRoute-1)].setStyle(
+      {
+        color: 'yellow'
+      }); 
+      window['polyline' + (endOfRoute-2)] = [[coords[endOfRoute-3].lat, coords[endOfRoute-3].lng],[coords[endOfRoute-2].lat, coords[endOfRoute-2].lng]];
+      window['polyline' + (endOfRoute-2)] = L.polyline( window['polyline' + (endOfRoute-2)]).addTo(mymapNL); 
+      window['polyline' + (endOfRoute-2)].setStyle(
+      {
+        color: 'yellow'
+      }); 
+  
+      
+      window['polyline' + 1] = [[coords[0].lat, coords[0].lng],[coords[1].lat, coords[1].lng]];
+      window['polyline' + 1] = L.polyline( window['polyline' + 1]).addTo(mymapNL); 
+      window['polyline' + 1].setStyle(
+      {
+        color: 'orange'
+      }); 
+      window['polyline' + 2] = [[coords[1].lat, coords[1].lng],[coords[2].lat, coords[2].lng]];
+      window['polyline' + 2] = L.polyline( window['polyline' + 2]).addTo(mymapNL); 
+      window['polyline' + 2].setStyle(
+      {
+        color: 'orange'
+      }); 
+  
+  
+      localStorage.setItem("Reverse","false");
+      mymapNL.removeLayer(StartMarker);
+      coords.reverse();
+      StartMarker = L.marker([coords[0].lat,coords[0].lng], {icon: StartIcon});
+      mymapNL.addLayer(StartMarker);
+      polylineLines.reverse();
+    }
+    else if(localStorage.getItem("Reverse") == "false")
     {
-      color: 'yellow'
-    }); 
-
-    
-    window['polyline' + 1] = [[coords[0].lat, coords[0].lng],[coords[1].lat, coords[1].lng]];
-    window['polyline' + 1] = L.polyline( window['polyline' + 1]).addTo(mymap); 
-    window['polyline' + 1].setStyle(
-    {
-      color: 'orange'
-    }); 
-    window['polyline' + 2] = [[coords[1].lat, coords[1].lng],[coords[2].lat, coords[2].lng]];
-    window['polyline' + 2] = L.polyline( window['polyline' + 2]).addTo(mymap); 
-    window['polyline' + 2].setStyle(
-    {
-      color: 'orange'
-    }); 
-
-
-    localStorage.setItem("Reverse","false");
-    mymap.removeLayer(StartMarker);
-    coords.reverse();
-    StartMarker = L.marker([coords[0].lat,coords[0].lng], {icon: StartIcon});
-    mymap.addLayer(StartMarker);
-    polylineLines.reverse();
+  
+      mymapNL.removeLayer(window["polyline" + (1)]);
+      mymapNL.removeLayer(window["polyline" + (2)]);
+      window['polyline' + 1] = [[coords[0].lat, coords[0].lng],[coords[1].lat, coords[1].lng]];
+      window['polyline' + 1] = L.polyline( window['polyline' + 1]).addTo(mymapNL); 
+      window['polyline' + 1].setStyle(
+      {
+        color: 'orange'
+      }); 
+      window['polyline' + 2] = [[coords[1].lat, coords[1].lng],[coords[2].lat, coords[2].lng]];
+      window['polyline' + 2] = L.polyline( window['polyline' + 2]).addTo(mymapNL); 
+      window['polyline' + 2].setStyle(
+      {
+        color: 'orange'
+      }); 
+  
+      mymapNL.removeLayer(window["polyline" + (endOfRoute-1)]);
+      mymapNL.removeLayer(window["polyline" + (endOfRoute-2)]);
+      window['polyline' + (endOfRoute-1)] = [[coords[endOfRoute-2].lat, coords[endOfRoute-2].lng],[coords[endOfRoute-1].lat, coords[endOfRoute-1].lng]];
+      window['polyline' + (endOfRoute-1)] = L.polyline( window['polyline' +(endOfRoute-1)]).addTo(mymapNL); 
+      window['polyline' + (endOfRoute-1)].setStyle(
+      {
+        color: 'yellow'
+      }); 
+      window['polyline' + (endOfRoute-2)] = [[coords[endOfRoute-3].lat, coords[endOfRoute-3].lng],[coords[endOfRoute-2].lat, coords[endOfRoute-2].lng]];
+      window['polyline' + (endOfRoute-2)] = L.polyline( window['polyline' + (endOfRoute-2)]).addTo(mymapNL); 
+      window['polyline' + (endOfRoute-2)].setStyle(
+      {
+        color: 'yellow'
+      }); 
+      
+  
+      localStorage.setItem("Reverse","true");
+      mymapNL.removeLayer(StartMarker);
+      coords.reverse();
+      StartMarker = L.marker([coords[0].lat,coords[0].lng], {icon: StartIcon});
+      mymapNL.addLayer(StartMarker);
+      polylineLines.reverse();
+  
+    }
   }
-  else if(localStorage.getItem("Reverse") == "false")
+  else if(localStorage.getItem("GeselecteerdeTaal") == "FR")
   {
-
-    mymap.removeLayer(window["polyline" + (1)]);
-    mymap.removeLayer(window["polyline" + (2)]);
-    window['polyline' + 1] = [[coords[0].lat, coords[0].lng],[coords[1].lat, coords[1].lng]];
-    window['polyline' + 1] = L.polyline( window['polyline' + 1]).addTo(mymap); 
-    window['polyline' + 1].setStyle(
+    if(localStorage.getItem("Reverse") == "true")
     {
-      color: 'orange'
-    }); 
-    window['polyline' + 2] = [[coords[1].lat, coords[1].lng],[coords[2].lat, coords[2].lng]];
-    window['polyline' + 2] = L.polyline( window['polyline' + 2]).addTo(mymap); 
-    window['polyline' + 2].setStyle(
+      mymapFR.removeLayer(window["polyline" + (1)]);
+      mymapFR.removeLayer(window["polyline" + (2)]);
+      mymapFR.removeLayer(window["polyline" + (endOfRoute-1)]);
+      mymapFR.removeLayer(window["polyline" + (endOfRoute-2)]);
+      window['polyline' + (endOfRoute-1)] = [[coords[endOfRoute-2].lat, coords[endOfRoute-2].lng],[coords[endOfRoute-1].lat, coords[endOfRoute-1].lng]];
+      window['polyline' + (endOfRoute-1)] = L.polyline( window['polyline' +(endOfRoute-1)]).addTo(mymapFR); 
+      window['polyline' + (endOfRoute-1)].setStyle(
+      {
+        color: 'yellow'
+      }); 
+      window['polyline' + (endOfRoute-2)] = [[coords[endOfRoute-3].lat, coords[endOfRoute-3].lng],[coords[endOfRoute-2].lat, coords[endOfRoute-2].lng]];
+      window['polyline' + (endOfRoute-2)] = L.polyline( window['polyline' + (endOfRoute-2)]).addTo(mymapFR); 
+      window['polyline' + (endOfRoute-2)].setStyle(
+      {
+        color: 'yellow'
+      }); 
+  
+      
+      window['polyline' + 1] = [[coords[0].lat, coords[0].lng],[coords[1].lat, coords[1].lng]];
+      window['polyline' + 1] = L.polyline( window['polyline' + 1]).addTo(mymapFR); 
+      window['polyline' + 1].setStyle(
+      {
+        color: 'orange'
+      }); 
+      window['polyline' + 2] = [[coords[1].lat, coords[1].lng],[coords[2].lat, coords[2].lng]];
+      window['polyline' + 2] = L.polyline( window['polyline' + 2]).addTo(mymapFR); 
+      window['polyline' + 2].setStyle(
+      {
+        color: 'orange'
+      }); 
+  
+  
+      localStorage.setItem("Reverse","false");
+      mymapFR.removeLayer(StartMarker);
+      coords.reverse();
+      StartMarker = L.marker([coords[0].lat,coords[0].lng], {icon: StartIcon});
+      mymapFR.addLayer(StartMarker);
+      polylineLines.reverse();
+    }
+    else if(localStorage.getItem("Reverse") == "false")
     {
-      color: 'orange'
-    }); 
-
-    mymap.removeLayer(window["polyline" + (endOfRoute-1)]);
-    mymap.removeLayer(window["polyline" + (endOfRoute-2)]);
-    window['polyline' + (endOfRoute-1)] = [[coords[endOfRoute-2].lat, coords[endOfRoute-2].lng],[coords[endOfRoute-1].lat, coords[endOfRoute-1].lng]];
-    window['polyline' + (endOfRoute-1)] = L.polyline( window['polyline' +(endOfRoute-1)]).addTo(mymap); 
-    window['polyline' + (endOfRoute-1)].setStyle(
+  
+      mymapFR.removeLayer(window["polyline" + (1)]);
+      mymapFR.removeLayer(window["polyline" + (2)]);
+      window['polyline' + 1] = [[coords[0].lat, coords[0].lng],[coords[1].lat, coords[1].lng]];
+      window['polyline' + 1] = L.polyline( window['polyline' + 1]).addTo(mymapFR); 
+      window['polyline' + 1].setStyle(
+      {
+        color: 'orange'
+      }); 
+      window['polyline' + 2] = [[coords[1].lat, coords[1].lng],[coords[2].lat, coords[2].lng]];
+      window['polyline' + 2] = L.polyline( window['polyline' + 2]).addTo(mymapFR); 
+      window['polyline' + 2].setStyle(
+      {
+        color: 'orange'
+      }); 
+  
+      mymapFR.removeLayer(window["polyline" + (endOfRoute-1)]);
+      mymapFR.removeLayer(window["polyline" + (endOfRoute-2)]);
+      window['polyline' + (endOfRoute-1)] = [[coords[endOfRoute-2].lat, coords[endOfRoute-2].lng],[coords[endOfRoute-1].lat, coords[endOfRoute-1].lng]];
+      window['polyline' + (endOfRoute-1)] = L.polyline( window['polyline' +(endOfRoute-1)]).addTo(mymapFR); 
+      window['polyline' + (endOfRoute-1)].setStyle(
+      {
+        color: 'yellow'
+      }); 
+      window['polyline' + (endOfRoute-2)] = [[coords[endOfRoute-3].lat, coords[endOfRoute-3].lng],[coords[endOfRoute-2].lat, coords[endOfRoute-2].lng]];
+      window['polyline' + (endOfRoute-2)] = L.polyline( window['polyline' + (endOfRoute-2)]).addTo(mymapFR); 
+      window['polyline' + (endOfRoute-2)].setStyle(
+      {
+        color: 'yellow'
+      }); 
+      
+  
+      localStorage.setItem("Reverse","true");
+      mymapFR.removeLayer(StartMarker);
+      coords.reverse();
+      StartMarker = L.marker([coords[0].lat,coords[0].lng], {icon: StartIcon});
+      mymapFR.addLayer(StartMarker);
+      polylineLines.reverse();
+  
+    }
+  }
+  else if(localStorage.getItem("GeselecteerdeTaal") == "ENG")
+  {
+    if(localStorage.getItem("Reverse") == "true")
     {
-      color: 'yellow'
-    }); 
-    window['polyline' + (endOfRoute-2)] = [[coords[endOfRoute-3].lat, coords[endOfRoute-3].lng],[coords[endOfRoute-2].lat, coords[endOfRoute-2].lng]];
-    window['polyline' + (endOfRoute-2)] = L.polyline( window['polyline' + (endOfRoute-2)]).addTo(mymap); 
-    window['polyline' + (endOfRoute-2)].setStyle(
+      mymapENG.removeLayer(window["polyline" + (1)]);
+      mymapENG.removeLayer(window["polyline" + (2)]);
+      mymapENG.removeLayer(window["polyline" + (endOfRoute-1)]);
+      mymapENG.removeLayer(window["polyline" + (endOfRoute-2)]);
+      window['polyline' + (endOfRoute-1)] = [[coords[endOfRoute-2].lat, coords[endOfRoute-2].lng],[coords[endOfRoute-1].lat, coords[endOfRoute-1].lng]];
+      window['polyline' + (endOfRoute-1)] = L.polyline( window['polyline' +(endOfRoute-1)]).addTo(mymapENG); 
+      window['polyline' + (endOfRoute-1)].setStyle(
+      {
+        color: 'yellow'
+      }); 
+      window['polyline' + (endOfRoute-2)] = [[coords[endOfRoute-3].lat, coords[endOfRoute-3].lng],[coords[endOfRoute-2].lat, coords[endOfRoute-2].lng]];
+      window['polyline' + (endOfRoute-2)] = L.polyline( window['polyline' + (endOfRoute-2)]).addTo(mymapENG); 
+      window['polyline' + (endOfRoute-2)].setStyle(
+      {
+        color: 'yellow'
+      }); 
+  
+      
+      window['polyline' + 1] = [[coords[0].lat, coords[0].lng],[coords[1].lat, coords[1].lng]];
+      window['polyline' + 1] = L.polyline( window['polyline' + 1]).addTo(mymapENG); 
+      window['polyline' + 1].setStyle(
+      {
+        color: 'orange'
+      }); 
+      window['polyline' + 2] = [[coords[1].lat, coords[1].lng],[coords[2].lat, coords[2].lng]];
+      window['polyline' + 2] = L.polyline( window['polyline' + 2]).addTo(mymapENG); 
+      window['polyline' + 2].setStyle(
+      {
+        color: 'orange'
+      }); 
+  
+  
+      localStorage.setItem("Reverse","false");
+      mymapENG.removeLayer(StartMarker);
+      coords.reverse();
+      StartMarker = L.marker([coords[0].lat,coords[0].lng], {icon: StartIcon});
+      mymapENG.addLayer(StartMarker);
+      polylineLines.reverse();
+    }
+    else if(localStorage.getItem("Reverse") == "false")
     {
-      color: 'yellow'
-    }); 
-    
-
-    localStorage.setItem("Reverse","true");
-    mymap.removeLayer(StartMarker);
-    coords.reverse();
-    StartMarker = L.marker([coords[0].lat,coords[0].lng], {icon: StartIcon});
-    mymap.addLayer(StartMarker);
-    polylineLines.reverse();
-
+  
+      mymapENG.removeLayer(window["polyline" + (1)]);
+      mymapENG.removeLayer(window["polyline" + (2)]);
+      window['polyline' + 1] = [[coords[0].lat, coords[0].lng],[coords[1].lat, coords[1].lng]];
+      window['polyline' + 1] = L.polyline( window['polyline' + 1]).addTo(mymapENG); 
+      window['polyline' + 1].setStyle(
+      {
+        color: 'orange'
+      }); 
+      window['polyline' + 2] = [[coords[1].lat, coords[1].lng],[coords[2].lat, coords[2].lng]];
+      window['polyline' + 2] = L.polyline( window['polyline' + 2]).addTo(mymapENG); 
+      window['polyline' + 2].setStyle(
+      {
+        color: 'orange'
+      }); 
+  
+      mymapENG.removeLayer(window["polyline" + (endOfRoute-1)]);
+      mymapENG.removeLayer(window["polyline" + (endOfRoute-2)]);
+      window['polyline' + (endOfRoute-1)] = [[coords[endOfRoute-2].lat, coords[endOfRoute-2].lng],[coords[endOfRoute-1].lat, coords[endOfRoute-1].lng]];
+      window['polyline' + (endOfRoute-1)] = L.polyline( window['polyline' +(endOfRoute-1)]).addTo(mymapENG); 
+      window['polyline' + (endOfRoute-1)].setStyle(
+      {
+        color: 'yellow'
+      }); 
+      window['polyline' + (endOfRoute-2)] = [[coords[endOfRoute-3].lat, coords[endOfRoute-3].lng],[coords[endOfRoute-2].lat, coords[endOfRoute-2].lng]];
+      window['polyline' + (endOfRoute-2)] = L.polyline( window['polyline' + (endOfRoute-2)]).addTo(mymapENG); 
+      window['polyline' + (endOfRoute-2)].setStyle(
+      {
+        color: 'yellow'
+      }); 
+      
+  
+      localStorage.setItem("Reverse","true");
+      mymapENG.removeLayer(StartMarker);
+      coords.reverse();
+      StartMarker = L.marker([coords[0].lat,coords[0].lng], {icon: StartIcon});
+      mymapENG.addLayer(StartMarker);
+      polylineLines.reverse();
+  
+    }
   }
 }
 function StartRoute()
@@ -3550,6 +3993,7 @@ function StartRoute()
     document.getElementsByClassName("DuringRouteNameNL")[0].innerHTML = localStorage.getItem("GekozenRouteName");
     document.getElementsByClassName("BeforeRouteNL")[0].style.display = 'none';
     document.getElementsByClassName("RouteInfoNL")[0].style.display = 'block';
+    mymapNL.removeLayer(StartMarker);
   }
   else if(localStorage.getItem("GeselecteerdeTaal") == "FR")
   {
@@ -3564,6 +4008,7 @@ function StartRoute()
     document.getElementsByClassName("DuringRouteNameFR")[0].innerHTML = localStorage.getItem("GekozenRouteName");
     document.getElementsByClassName("BeforeRouteFR")[0].style.display = 'none';
     document.getElementsByClassName("RouteInfoFR")[0].style.display = 'block';
+    mymapFR.removeLayer(StartMarker);
   }
   else if(localStorage.getItem("GeselecteerdeTaal") == "ENG")
   {
@@ -3578,10 +4023,11 @@ function StartRoute()
     document.getElementsByClassName("DuringRouteNameENG")[0].innerHTML = localStorage.getItem("GekozenRouteName");
     document.getElementsByClassName("BeforeRouteENG")[0].style.display = 'none';
     document.getElementsByClassName("RouteInfoENG")[0].style.display = 'block';
+    mymapENG.removeLayer(StartMarker);
   }
   localStorage.setItem("RouteStart","true");
   coordinateLocationInArray = 0;
-  mymap.removeLayer(StartMarker);
+  
 }
 function StopRoute()
 {
@@ -3593,6 +4039,28 @@ function StopRoute()
     document.getElementsByClassName("BeforeRouteNL")[0].style.display = 'none';
     document.getElementsByClassName("KiesRouteDivNL")[0].style.display = 'block';
     document.getElementsByClassName("RouteInfoNL")[0].style.display = "none";
+    mymapNL.removeLayer(StartMarker);
+    var aantalLines = localStorage.getItem("polyline").length;
+    for(var key in window)
+    {
+      if(key.includes("polyline"))
+      {
+        if(hasNumber.test(key) == true)
+        {
+          if(window[key].options.color == "yellow" || window[key].options.color == "orange" || window[key].options.color == "lightgreen")
+          {
+            mymapNL.removeLayer(window[key]);
+          }
+          //console.log(key);
+        }
+        //console.log("y = " + key);
+      }
+      else
+      {
+  
+      }
+      
+    }
   }
   else if(localStorage.getItem("GeselecteerdeTaal") == "FR")
   {
@@ -3601,6 +4069,28 @@ function StopRoute()
     document.getElementsByClassName("BeforeRouteFR")[0].style.display = 'none';
     document.getElementsByClassName("KiesRouteDivFR")[0].style.display = 'block';
     document.getElementsByClassName("RouteInfoFR")[0].style.display = "none";
+    mymapFR.removeLayer(StartMarker);
+    var aantalLines = localStorage.getItem("polyline").length;
+    for(var key in window)
+    {
+      if(key.includes("polyline"))
+      {
+        if(hasNumber.test(key) == true)
+        {
+          if(window[key].options.color == "yellow" || window[key].options.color == "orange" || window[key].options.color == "lightgreen")
+          {
+            mymapFR.removeLayer(window[key]);
+          }
+          //console.log(key);
+        }
+        //console.log("y = " + key);
+      }
+      else
+      {
+  
+      }
+      
+    }
   }
   else if(localStorage.getItem("GeselecteerdeTaal") == "ENG")
   {
@@ -3609,29 +4099,28 @@ function StopRoute()
     document.getElementsByClassName("BeforeRouteENG")[0].style.display = 'none';
     document.getElementsByClassName("KiesRouteDivENG")[0].style.display = 'block';
     document.getElementsByClassName("RouteInfoENG")[0].style.display = "none";
-    
-  }
-  mymap.removeLayer(StartMarker);
-  var aantalLines = localStorage.getItem("polyline").length;
-  for(var key in window)
-  {
-    if(key.includes("polyline"))
+    mymapENG.removeLayer(StartMarker);
+    var aantalLines = localStorage.getItem("polyline").length;
+    for(var key in window)
     {
-      if(hasNumber.test(key) == true)
+      if(key.includes("polyline"))
       {
-        if(window[key].options.color == "yellow" || window[key].options.color == "orange" || window[key].options.color == "lightgreen")
+        if(hasNumber.test(key) == true)
         {
-          mymap.removeLayer(window[key]);
+          if(window[key].options.color == "yellow" || window[key].options.color == "orange" || window[key].options.color == "lightgreen")
+          {
+            mymapENG.removeLayer(window[key]);
+          }
+          //console.log(key);
         }
-        //console.log(key);
+        //console.log("y = " + key);
       }
-      //console.log("y = " + key);
+      else
+      {
+  
+      }
+      
     }
-    else
-    {
-
-    }
-    
   }
   polylineLines = [];
   polylineCoords = [];
@@ -3640,10 +4129,31 @@ function StopRoute()
   coordinateLocationInArray = 0;
   localStorage.removeItem("polyline");
 }
+function BerekenAfstandTussenPunt(puntaLat, puntaLng, puntbLat, puntbLng)
+{
+  var punt1lat = puntaLat;
+  var punt1lng = puntaLng;
+  var punt2lat = puntbLat;
+  var punt2lng = puntbLng;
+  var rad = function(x) {
+    return x * Math.PI / 180;
+  };
+  var R = 6371000; // Earth’s mean radius in meter
+  var dLat = rad(punt2lat - punt1lat);
+  var dLong = rad(punt2lng - punt1lng);
+  var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(rad(punt1lat)) * Math.cos(rad(punt2lat)) *
+    Math.sin(dLong / 2) * Math.sin(dLong / 2);
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  var d = R * c;
+  return d;
+}
 navigator.geolocation.watchPosition(onLocationFound, onLocationError, {
   maximumAge: 1000,
-  timeout: 2000
+  timeout: 3000,
+  enableHighAccuracy: true
 });
+
 function MeldProbleem()
 {
   if(localStorage.getItem("InternetStatus") == "Online")
@@ -3690,9 +4200,10 @@ function MeldProbleem()
 function LanuageChange(id)
 {
   
-  localStorage.setItem("GeselecteerdeTaal",id);
+  
   localStorage.setItem("MapNLInitialised","false");
   localStorage.setItem("MapFRInitialised","false");
+  localStorage.setItem("MapENGInitialised","false");
   try
   {
     mymap.removeLayer(StartMarker);
@@ -3735,5 +4246,5 @@ function LanuageChange(id)
   totaldistance = 0;
   coordinateLocationInArray = 0;
   localStorage.removeItem("polyline");
-
+  localStorage.setItem("GeselecteerdeTaal",id);
 }
